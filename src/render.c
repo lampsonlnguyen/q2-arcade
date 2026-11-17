@@ -3,6 +3,7 @@
  * Simple integer rectangles/5x7 font; no image/font assets or system UI.
  */
 #include "app.h"
+#include "font.h"
 
 /* Q2 Pod assets/themes and patch/offsets.inc supply the theme IDs and accents.
  * Read saved settings once at launch; keep the game-piece colors distinct. */
@@ -71,28 +72,6 @@ static const u32 palette[] = {
     0, 0x32cbe6, 0xe8cd47, 0xaf80e7, 0x4bc785,
     0xe86666, 0x578bdf, 0xf39b40
 };
-static const unsigned char letters[26][7] = {
-    {14,17,17,31,17,17,17}, {30,17,17,30,17,17,30},
-    {14,17,16,16,16,17,14}, {30,17,17,17,17,17,30},
-    {31,16,16,30,16,16,31}, {31,16,16,30,16,16,16},
-    {14,17,16,23,17,17,15}, {17,17,17,31,17,17,17},
-    {14,4,4,4,4,4,14}, {1,1,1,1,17,17,14},
-    {17,18,20,24,20,18,17}, {16,16,16,16,16,16,31},
-    {17,27,21,21,17,17,17}, {17,25,21,19,17,17,17},
-    {14,17,17,17,17,17,14}, {30,17,17,30,16,16,16},
-    {14,17,17,17,21,18,13}, {30,17,17,30,20,18,17},
-    {15,16,16,14,1,1,30}, {31,4,4,4,4,4,4},
-    {17,17,17,17,17,17,14}, {17,17,17,17,17,10,4},
-    {17,17,17,21,21,21,10}, {17,17,10,4,10,17,17},
-    {17,17,10,4,4,4,4}, {31,1,2,4,8,16,31}
-};
-static const unsigned char digits[10][7] = {
-    {14,17,19,21,25,17,14}, {4,12,4,4,4,4,14},
-    {14,17,1,2,4,8,31}, {30,1,1,14,1,1,30},
-    {2,6,10,18,31,2,2}, {31,16,16,30,1,1,30},
-    {14,16,16,30,17,17,14}, {31,1,2,4,8,8,8},
-    {14,17,17,14,17,17,14}, {14,17,17,15,1,1,14}
-};
 static void fill(u32 *dst, unsigned stride, int x, int y, int w, int h, u32 color) {
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
@@ -113,52 +92,38 @@ static void border(u32 *d, unsigned s, int x, int y, int w, int h, u32 c) {
 /* HUD and labels use the shared framework's safe-area geometry. This is
  * intentionally only for UI/text: background and gameplay drawing remain
  * full-frame so a rounded corner never changes gameplay coordinates. */
-static void ui_pixel(u32 *d, unsigned s, int x, int y, int scale, u32 color) {
-    for (int yy = 0; yy < scale; ++yy)
-        for (int xx = 0; xx < scale; ++xx)
-            if (q2_game_ui_safe_point(SCREEN_W, SCREEN_H, x + xx, y + yy))
-                fill(d, s, x + xx, y + yy, 1, 1, color);
+static int text_width(const char *str,int scale) {
+    const unsigned char *adv=scale==1?f12_adv:f18_adv;
+    int width=0;
+    for(;*str;++str){unsigned c=(unsigned char)*str; if(c>='a'&&c<='z')c-=32;
+        width+=adv[c>=32&&c<=90?c-32:0];}
+    return width;
 }
-static const unsigned char *glyph(char c) {
-    if (c >= 'a' && c <= 'z') c -= 32;
-    if (c >= 'A' && c <= 'Z') return letters[c - 'A'];
-    if (c >= '0' && c <= '9') return digits[c - '0'];
-    return 0;
-}
-static void text(u32 *d, unsigned s, int x, int y, const char *str, u32 color, int scale) {
-    int step=scale==3?3:scale*2;
-    if(scale==3)scale=1;
-    for (; *str; ++str) {
-        const unsigned char *g = glyph(*str);
-        if (g) {
-            for (int row = 0; row < 7; ++row)
-                for (int col = 0; col < 5; ++col)
-                    if (g[row] & (16u >> col))
-                        ui_pixel(d,s,x+col*scale,y+row*scale,scale,color);
-        } else if (*str == '-' || *str == ':') {
-            int line = *str == '-' ? 3 : 1;
-            ui_pixel(d,s,x+scale,y+line*scale,scale,color), ui_pixel(d,s,x+2*scale,y+line*scale,scale,color), ui_pixel(d,s,x+3*scale,y+line*scale,scale,color);
-            if (*str == ':') ui_pixel(d,s,x+scale,y+5*scale,scale,color), ui_pixel(d,s,x+2*scale,y+5*scale,scale,color), ui_pixel(d,s,x+3*scale,y+5*scale,scale,color);
-        } else if (*str == '/') {
-            for (int row = 0; row < 7; ++row)
-                ui_pixel(d,s,x+(5-row*5/7)*scale,y+row*scale,scale,color);
-        } else if (*str == '.') {
-            ui_pixel(d,s,x+2*scale,y+6*scale,scale,color);
-        } else if (*str == '<') {
-            ui_pixel(d,s,x+1*scale,y+3*scale,scale,color);
-            ui_pixel(d,s,x+2*scale,y+2*scale,scale,color);
-            ui_pixel(d,s,x+2*scale,y+4*scale,scale,color);
-        } else if (*str == '>') {
-            ui_pixel(d,s,x+3*scale,y+3*scale,scale,color);
-            ui_pixel(d,s,x+2*scale,y+2*scale,scale,color);
-            ui_pixel(d,s,x+2*scale,y+4*scale,scale,color);
+static void text(u32 *d,unsigned s,int x,int y,const char *str,u32 color,int scale) {
+    const unsigned char *adv=scale==1?f12_adv:f18_adv;
+    const unsigned short *off=scale==1?f12_off:f18_off;
+    const unsigned char *px=scale==1?f12_px:f18_px;
+    int height=scale==1?12:17;
+    for(;*str;++str) {
+        unsigned c=(unsigned char)*str;
+        if(c>='a'&&c<='z')c-=32;
+        unsigned i=c>=32&&c<=90?c-32:0;
+        int width=adv[i];
+        for(int row=0;row<height;++row)for(int col=0;col<width;++col) {
+            int xx=x+col,yy=y+row;
+            unsigned alpha=px[off[i]+row*width+col];
+            if(!alpha||!q2_game_ui_safe_point(SCREEN_W,SCREEN_H,xx,yy))continue;
+            u32 bg=d[xx*s+SCREEN_H-1-yy];
+            unsigned r=(((bg>>16)&255)*(255-alpha)+((color>>16)&255)*alpha)/255;
+            unsigned g=(((bg>>8)&255)*(255-alpha)+((color>>8)&255)*alpha)/255;
+            unsigned b=((bg&255)*(255-alpha)+(color&255)*alpha)/255;
+            fill(d,s,xx,yy,1,1,(r<<16)|(g<<8)|b);
         }
-        x += 3*step;
+        x+=width;
     }
 }
 static void centered(u32 *d,unsigned s,int y,const char *str,u32 c,int scale) {
-    int n=0; while(str[n]) ++n;
-    text(d,s,(SCREEN_W-n*(scale==3?9:6*scale))/2,y,str,c,scale);
+    text(d,s,(SCREEN_W-text_width(str,scale))/2,y,str,c,scale);
 }
 static void number(u32 *d, unsigned s, int x, int y, unsigned value, u32 c, int scale) {
     char out[12]; int n=0;
@@ -168,7 +133,7 @@ static void number(u32 *d, unsigned s, int x, int y, unsigned value, u32 c, int 
 }
 static void line_heading(u32*d,unsigned s,const char*name) {
     fill(d,s,0,0,SCREEN_W,47,BG);
-    centered(d,s,18,name,WHITE,3);
+    centered(d,s,10,name,WHITE,3);
     fill(d,s,20,47,335,1,OUTLINE);
 }
 static void options(u32*d,unsigned s,const char*heading,const char*const*names,int count,int selected) {
@@ -179,7 +144,7 @@ static void options(u32*d,unsigned s,const char*heading,const char*const*names,i
     for(int i=0;i<count;++i){
         int y=123+i*spacing;
         fill(d,s,77,y,221,spacing-8,i==selected?SELECT:PANEL);
-        text(d,s,91,y+11,names[i],i==selected?selected_text:DIM,3);
+        text(d,s,91,y+8,names[i],i==selected?selected_text:DIM,3);
     }
 }
 /* Compact 3x5 capitals keep bottom hints clear of the rounded glass. */
@@ -240,13 +205,13 @@ static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
             } else {
                 fill(d,stride,27,y+MENU_ROW_H-1,321,1,0xd4d4d4);
             }
-            text(d,stride,48,y+11,names[i],selected?WHITE:ink,3);
-            if(selected)text(d,stride,311,y+11,">",WHITE,3);
+            text(d,stride,48,y+8,names[i],selected?WHITE:ink,3);
+            if(selected)text(d,stride,311,y+8,">",WHITE,3);
         } else if(modern) {
             fill(d,stride,28,y,319,MENU_ROW_H,selected?accent:(bright?0xfafafa:0x252b35));
             if(!selected)fill(d,stride,28,y+MENU_ROW_H-1,319,1,bright?0xd0d0d0:OUTLINE);
-            text(d,stride,48,y+11,names[i],selected?WHITE:ink,3);
-            if(selected)text(d,stride,312,y+11,">",WHITE,3);
+            text(d,stride,48,y+8,names[i],selected?WHITE:ink,3);
+            if(selected)text(d,stride,312,y+8,">",WHITE,3);
         } else {
             /* Minimal's accent-framed selection card. */
             u32 tile=bright?0xffffff:0x1e2934;
@@ -254,8 +219,8 @@ static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
             fill(d,stride,30,y+2,315,MENU_ROW_H-4,tile);
             border(d,stride,30,y+2,315,MENU_ROW_H-4,edge);
             if(selected)fill(d,stride,35,y+7,4,MENU_ROW_H-14,accent);
-            text(d,stride,53,y+11,names[i],ink,3);
-            if(selected)text(d,stride,314,y+11,">",accent,3);
+            text(d,stride,53,y+8,names[i],ink,3);
+            if(selected)text(d,stride,314,y+8,">",accent,3);
         }
     }
     centered(d,stride,282,"WHEEL SELECT  CENTER OPEN",secondary,1);

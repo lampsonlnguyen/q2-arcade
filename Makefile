@@ -12,7 +12,7 @@ CARD = dist/.arcade
 
 all: dist/q2-arcade.zip
 
-build/q2/%.o: %.c src/app.h core/arcade_core.h core/breakout_core.h core/game_framework.h
+build/q2/%.o: %.c src/app.h src/font.h core/arcade_core.h core/breakout_core.h core/game_framework.h
 	mkdir -p $(@D)
 	$(Q2_CC) $(Q2_FLAGS) $(Q2_CFLAGS) -std=c11 -Isrc -Icore -c $< -o $@
 
