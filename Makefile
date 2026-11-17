@@ -35,11 +35,24 @@ build/app-test: tests/app_test.c src/app.c $(wildcard core/*.c) src/app.h
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c core/arcade_core.c core/breakout_core.c
 
-check: build/app-test
+# Build each portable C test directly. No .sh wrappers (Windows CRLF safe).
+build/arcade-core-test: tests/arcade_core_test.c core/arcade_core.c core/arcade_core.h
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -o $@ core/arcade_core.c tests/arcade_core_test.c
+
+build/breakout-core-test: tests/breakout_core_test.c core/breakout_core.c core/breakout_core.h
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -o $@ core/breakout_core.c tests/breakout_core_test.c
+
+build/game-framework-test: tests/game_framework_test.c core/game_framework.c core/game_framework.h
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -o $@ core/game_framework.c tests/game_framework_test.c
+
+check: build/app-test build/arcade-core-test build/breakout-core-test build/game-framework-test
 	./build/app-test
-	sh tests/arcade_core.sh
-	sh tests/breakout_core.sh
-	sh tests/game_framework.sh
+	./build/arcade-core-test
+	./build/breakout-core-test
+	./build/game-framework-test
 
 clean:
 	rm -rf build dist
