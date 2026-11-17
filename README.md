@@ -33,6 +33,8 @@ If you installed an older build, rename the SD-card folder `.q2-arcade` to `.arc
 
 Within the pause menu, use the wheel or physical Left/Right buttons to select **Resume**, **Restart**, **Games**, or **Exit**, then press Centre. Return from the pause menu goes back to the arcade's game list. Touch taps on the game picker are supported.
 
+**Physical button input:** The card manifest sets `audio=1` so Q2 Pod forwards the Left, Right, and Play/Pause hardware buttons to Arcade rather than the music player. This also stops music playback while Arcade is open. Despite the flag name, Arcade does not generate audio. The wheel rotates Blocks one step per roughly quarter turn, with large flicks limited to one rotation per input packet.
+
 High scores for Blocks and Breakout are saved to `.arcade/highscores` on the SD card.
 
 ## Build from source
