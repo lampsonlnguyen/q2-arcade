@@ -39,4 +39,10 @@ void q2_game_restart(Q2GameRunner *runner);
 int q2_game_input(Q2GameRunner *runner, Q2GameInput event);
 unsigned q2_game_advance(Q2GameRunner *runner, unsigned elapsed_ms);
 void q2_game_paint(const Q2GameRunner *runner, void *canvas);
+
+/* Shared UI safe area for Q2's rounded 375x320 display.
+ * Text and interactive HUD elements must stay within this region.
+ * Backgrounds and gameplay canvases may still use the full framebuffer.
+ * This helper is resolution-independent, with conservative corner insets. */
+int q2_game_ui_safe_point(int screen_width, int screen_height, int x, int y);
 #endif
