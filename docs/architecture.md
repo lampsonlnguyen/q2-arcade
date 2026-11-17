@@ -19,7 +19,7 @@ This repository **does not** merge or remove firmware changes on the original `n
 | Firmware blob persistence | `.arcade/highscores` on SD |
 | Firmware builder `tools/peq.py` | Standalone `Makefile` and ZIP |
 
-The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
+The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The `q2app` manifest must declare `audio=1`: without it, Q2 Pod's `addon_game_input()` reserves the physical Left, Right, and Play/Pause keys for music rather than forwarding them to the card app. This also stops background music while Arcade is active; Arcade itself does not currently produce sound. Blocks wheel rotation uses a quarter-turn threshold (approximately 50 raw units) and caps each wheel packet at one rotation. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
 
 ### Adding a fourth arcade game
 
