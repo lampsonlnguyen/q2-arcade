@@ -21,6 +21,28 @@ This repository **does not** merge or remove firmware changes on the original `n
 
 The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The `q2app` manifest must declare `audio=1`: without it, Q2 Pod's `addon_game_input()` reserves the physical Left, Right, and Play/Pause keys for music rather than forwarding them to the card app. This also stops background music while Arcade is active; Arcade itself does not currently produce sound. Blocks wheel rotation uses a quarter-turn threshold (approximately 50 raw units) and caps each wheel packet at one rotation. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
 
+## Q2 Pod theme-aware game selection
+
+`src/theme.c/.h` reads the device's existing `[IPOD]` preferences
+from `/mnt/data/config.ini` (read-only). The settings match the
+[upstream theme XML](https://github.com/DiamondBond/q2-pod/tree/main/assets/themes)
+and `patch/theme_engine.c`:
+
+- `THEME=0`: Minimal, using `MINIMAL_ACCENT` and a framed selection card
+- `THEME=1`: Classic, using `CLASSIC_LIGHT_ACCENT` and a gloss selection band
+- `THEME=2`: Modern, using `ACCENT` and a flat selection bar
+
+The numeric accent palette follows upstream `patch/offsets.inc`. The
+separate Q2 card process cannot invoke AWTK theme widgets; `src/render.c`
+therefore paints compact native-framebuffer versions of the selection
+style, retaining the existing input hitboxes and using the shared
+rounded-display text safe area.
+
+The selected theme is loaded on app launch, not continuously. `LIGHT=1`
+uses a bright menu surface for Minimal/Modern; `LIGHT=2` (Auto) uses the
+dark fallback because the firmware's live day/night decision is not
+published to card apps. Gameplay surfaces do not change with the theme.
+
 ## Shared rounded-screen safe area
 
 The Q2 display is physically rounded, even though the framebuffer is 375×320.
