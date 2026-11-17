@@ -18,8 +18,8 @@ jobs:
       - name: Verify ZIP layout and executable architecture
         run: |
           unzip -l dist/q2-arcade.zip
-          unzip -p dist/q2-arcade.zip .q2-arcade/q2app | grep -Fx 'game=1'
-          file dist/.q2-arcade/q2-arcade
+          unzip -p dist/q2-arcade.zip .arcade/q2app | grep -Fx 'game=1'
+          file dist/.arcade/q2-arcade
       - uses: actions/upload-artifact@v4
         with:
           name: q2-arcade-card-app
