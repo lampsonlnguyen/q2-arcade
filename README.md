@@ -6,9 +6,16 @@ The gameplay cores and the portable framework are migrated from [`q2-pod/new-bui
 
 ## Install
 
-1. Download the `q2-arcade.zip` build artifact from [GitHub Actions](https://github.com/lampsonlnguyen/q2-arcade/actions) (or build locally).
-2. Extract the ZIP **to the root** of the Q2 microSD card, keeping the hidden `.q2-arcade` folder intact.
-3. Open **Library → Games → Q2 Arcade** in a compatible Q2 Pod firmware. Select Pong, Blocks or Breakout in the arcade menu.
+1. From [the successful GitHub Actions build](https://github.com/lampsonlnguyen/q2-arcade/actions/runs/44130724322), download the artifact called **`q2-arcade-card-app`**. GitHub gives you a ZIP containing **another ZIP**, `q2-arcade.zip`.
+2. **Extract the first ZIP**, then **extract `q2-arcade.zip` directly to the microSD card root**. Do **not** copy just the inner ZIP or leave an extra directory such as `q2-arcade/` around the hidden app folder.
+3. Verify these paths exist on the microSD card (replace `E:` with your card's drive letter):
+   - `E:\.q2-arcade\q2app` (plain text containing `name=Q2 Arcade` and `game=1`)
+   - `E:\.q2-arcade\q2-arcade` (the MIPS executable, not a `.zip` file)
+4. Safely eject the SD card, insert it in the Q2, then **leave and reopen Library → Games → Q2 Arcade** so Q2 Pod scans the card again.
+
+**Windows tip:** In File Explorer choose **View → Show → Hidden items** if `.q2-arcade` is not visible.
+
+**If Q2 Arcade still does not appear:** Confirm you are running Q2 Pod firmware with SD-card games support (stock Shanling firmware does not provide this custom Games discovery). The firmware scans hidden folders directly beneath the card root, requires a `q2app` file containing `game=1`, and only lists an app if its `q2-arcade` binary is present. If you installed other card games, verify the Arcade folder sits alongside them, not inside their folders.
 
 The package contains `.q2-arcade/q2app` (`name=Q2 Arcade`, `game=1`) and `.q2-arcade/q2-arcade`, a freestanding MIPS32 little-endian program.
 
