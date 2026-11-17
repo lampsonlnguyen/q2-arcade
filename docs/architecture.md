@@ -21,6 +21,29 @@ This repository **does not** merge or remove firmware changes on the original `n
 
 The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The `q2app` manifest must declare `audio=1`: without it, Q2 Pod's `addon_game_input()` reserves the physical Left, Right, and Play/Pause keys for music rather than forwarding them to the card app. This also stops background music while Arcade is active; Arcade itself does not currently produce sound. Blocks wheel rotation uses a quarter-turn threshold (approximately 50 raw units) and caps each wheel packet at one rotation. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
 
+## Shared rounded-screen safe area
+
+The Q2 display is physically rounded, even though the framebuffer is 375×320.
+All **HUD elements, captions, labels, and interactive UI text** should pass
+through `q2_game_ui_safe_point(width, height, x, y)` from
+`core/game_framework.h` before rendering. The shared `src/render.c` text
+primitive now clips individual glyph pixels to that safe region, so new games
+using it inherit the policy automatically.
+
+The region excludes a narrow band at the very top and bottom, uses a
+conservative horizontal margin across the middle, and reserves wider
+horizontal corner margins within the upper/lower eighth of the display.
+The layout is proportional to screen size rather than hardcoded to Blocks.
+
+**Do not clip game physics or the full framebuffer to the text-safe area.**
+Backgrounds, borders and the playfield can still occupy the available screen.
+Keep game-important UI text and touch targets inside the shared inset, rather
+than placing labels in the four corners. For a new text renderer, call the
+framework helper rather than duplicating its constants.
+
+Blocks' Score/score value has moved right; the bottom instruction line is
+also inset from the lower-left rounded corner.
+
 ### Adding a fourth arcade game
 
 Implement a new portable core in `core/`, add its launcher registration in `src/app.c`, and draw it in `src/render.c`. This avoids modifying Q2 Pod firmware, but the current card still requires some per-game integration. The separate `game_framework` module is available for a later callback/registry refactor.
