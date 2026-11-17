@@ -39,9 +39,8 @@ style, retaining the existing input hitboxes and using the shared
 rounded-display text safe area.
 
 The selected theme is loaded on app launch, not continuously. `LIGHT=1`
-uses a bright menu surface for Minimal/Modern; `LIGHT=2` (Auto) uses the
-dark fallback because the firmware's live day/night decision is not
-published to card apps. Gameplay surfaces do not change with the theme.
+uses a bright menu surface for Minimal/Modern; `LIGHT=2` (Auto) samples the already-rendered firmware
+screen at launch to infer its current light/dark appearance. Gameplay surfaces do not change with the theme.
 
 ## Shared rounded-screen safe area
 
