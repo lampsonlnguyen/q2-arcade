@@ -35,6 +35,10 @@ build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c
 
+build/menu-theme-test: tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c src/app.h src/theme.h
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c
+
 build/theme-test: tests/theme_test.c src/theme.c src/theme.h
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Isrc -o $@ tests/theme_test.c src/theme.c
@@ -52,9 +56,10 @@ build/game-framework-test: tests/game_framework_test.c core/game_framework.c cor
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -o $@ core/game_framework.c tests/game_framework_test.c
 
-check: build/app-test build/theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+check: build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
 	./build/app-test
 	./build/theme-test
+	./build/menu-theme-test
 	./build/arcade-core-test
 	./build/breakout-core-test
 	./build/game-framework-test
