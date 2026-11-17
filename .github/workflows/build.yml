@@ -1,0 +1,26 @@
+name: Build and test Q2 Arcade card
+on:
+  push:
+  pull_request:
+jobs:
+  card:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler and packaging utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld make zip unzip
+      - name: Run portable game and app integration tests
+        run: make check
+      - name: Build installable MIPS card app
+        run: make
+      - name: Verify ZIP layout and executable architecture
+        run: |
+          unzip -l dist/q2-arcade.zip
+          unzip -p dist/q2-arcade.zip .q2-arcade/q2app | grep -Fx 'game=1'
+          file dist/.q2-arcade/q2-arcade
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q2-arcade-card-app
+          path: dist/q2-arcade.zip
