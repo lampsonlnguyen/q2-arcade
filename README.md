@@ -87,3 +87,17 @@ Portable games and framework were developed for the `new-builtin-games` branch o
 Arcade reads `/mnt/data/config.ini` when opened and follows Q2 Pod’s Minimal, Modern, or Classic theme, its saved accent, and Light Mode. Auto Light Mode inherits the visible firmware screen’s light/dark appearance at launch; reopen Arcade after a theme change or a day/night transition. Classic uses a flat selection band rather than the firmware’s gloss artwork. Game pieces keep distinct colors for readability. Bottom hints use compact 3×5 lettering centered inside the rounded screen.
 
 Menu rows are compact (38-pixel spacing) to leave room for additional entries. Interface text uses smooth glyphs close to the original size, with centered headings and safe screen margins.
+
+## Automatic builds and releases
+
+GitHub Actions tests and builds each push to `main` and every pull request. Download the **q2-arcade-card-app** artifact from a successful run, or start a build with **Actions → q2-arcade → Run workflow**.
+
+Push an unused version tag to publish a release automatically:
+
+```sh
+git pull --ff-only
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+Once the build and package checks pass, Actions creates the release and attaches **q2-arcade.zip** directly. Re-running the tag build replaces that release's ZIP. Branch pushes and manual branch builds only save Actions artifacts.
