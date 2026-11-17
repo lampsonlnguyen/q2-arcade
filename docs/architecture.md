@@ -16,7 +16,7 @@ This repository **does not** merge or remove firmware changes on the original `n
 | `patch/arcade_gameplay.inc` | `src/app.c` |
 | `patch/arcade_draw.inc` | `src/render.c` |
 | Games list and timers inside `patch/games.c` | `src/app.c` and `src/platform_q2.c` |
-| Firmware blob persistence | `.q2-arcade/highscores` on SD |
+| Firmware blob persistence | `.arcade/highscores` on SD |
 | Firmware builder `tools/peq.py` | Standalone `Makefile` and ZIP |
 
 The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.

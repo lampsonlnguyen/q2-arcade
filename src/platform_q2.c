@@ -22,8 +22,8 @@ enum { SYS_READ=4003,SYS_WRITE=4004,SYS_OPEN=4005,SYS_CLOSE=4006,
        O_WRONLY=1,O_RDWR=2,O_CREAT=0x100,O_TRUNC=0x200,O_CLOEXEC=0x80000,
        MSG_DONTWAIT=0x40,FRAME_MS=17 };
 #define INPUT_SOCKET "/tmp/q2-arcade.input.sock"
-#define SAVE_FILE "/mnt/mmc/.q2-arcade/highscores"
-#define SAVE_TEMP "/mnt/mmc/.q2-arcade/highscores.new"
+#define SAVE_FILE "/mnt/mmc/.arcade/highscores"
+#define SAVE_TEMP "/mnt/mmc/.arcade/highscores.new"
 #define SAVE_MAGIC 0x51324143u
 static ArcadeApp app;
 

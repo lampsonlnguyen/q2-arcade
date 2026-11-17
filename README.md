@@ -6,18 +6,20 @@ The gameplay cores and the portable framework are migrated from [`q2-pod/new-bui
 
 ## Install
 
-1. From [the successful GitHub Actions build](https://github.com/lampsonlnguyen/q2-arcade/actions/runs/44130724322), download the artifact called **`q2-arcade-card-app`**. GitHub gives you a ZIP containing **another ZIP**, `q2-arcade.zip`.
+1. From [the successful GitHub Actions build](https://github.com/lampsonlnguyen/q2-arcade/actions), download the artifact called **`q2-arcade-card-app`**. GitHub gives you a ZIP containing **another ZIP**, `q2-arcade.zip`.
 2. **Extract the first ZIP**, then **extract `q2-arcade.zip` directly to the microSD card root**. Do **not** copy just the inner ZIP or leave an extra directory such as `q2-arcade/` around the hidden app folder.
 3. Verify these paths exist on the microSD card (replace `E:` with your card's drive letter):
-   - `E:\.q2-arcade\q2app` (plain text containing `name=Q2 Arcade` and `game=1`)
-   - `E:\.q2-arcade\q2-arcade` (the MIPS executable, not a `.zip` file)
+   - `E:\.arcade\q2app` (plain text containing `name=Q2 Arcade` and `game=1`)
+   - `E:\.arcade\q2-arcade` (the MIPS executable, not a `.zip` file)
 4. Safely eject the SD card, insert it in the Q2, then **leave and reopen Library → Games → Q2 Arcade** so Q2 Pod scans the card again.
 
-**Windows tip:** In File Explorer choose **View → Show → Hidden items** if `.q2-arcade` is not visible.
+**Windows tip:** In File Explorer choose **View → Show → Hidden items** if `.arcade` is not visible.
 
 **If Q2 Arcade still does not appear:** Confirm you are running Q2 Pod firmware with SD-card games support (stock Shanling firmware does not provide this custom Games discovery). The firmware scans hidden folders directly beneath the card root, requires a `q2app` file containing `game=1`, and only lists an app if its `q2-arcade` binary is present. If you installed other card games, verify the Arcade folder sits alongside them, not inside their folders.
 
-The package contains `.q2-arcade/q2app` (`name=Q2 Arcade`, `game=1`) and `.q2-arcade/q2-arcade`, a freestanding MIPS32 little-endian program.
+The package contains `.arcade/q2app` (`name=Q2 Arcade`, `game=1`) and `.arcade/q2-arcade`, a freestanding MIPS32 little-endian program.
+
+If you installed an older build, rename the SD-card folder `.q2-arcade` to `.arcade`; keep `q2-arcade` and `q2app` inside it. This also preserves `highscores`. The folder ID is `arcade`, so Q2 Pod looks for `.arcade/q2-arcade` and sends input to `/tmp/q2-arcade.input.sock`.
 
 ### Controls
 
@@ -31,7 +33,7 @@ The package contains `.q2-arcade/q2app` (`name=Q2 Arcade`, `game=1`) and `.q2-ar
 
 Within the pause menu, use the wheel or physical Left/Right buttons to select **Resume**, **Restart**, **Games**, or **Exit**, then press Centre. Return from the pause menu goes back to the arcade's game list. Touch taps on the game picker are supported.
 
-High scores for Blocks and Breakout are saved to `.q2-arcade/highscores` on the SD card.
+High scores for Blocks and Breakout are saved to `.arcade/highscores` on the SD card.
 
 ## Build from source
 

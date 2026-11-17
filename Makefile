@@ -8,7 +8,7 @@ Q2_FLAGS = --target=mipsel-linux-gnu -march=mips32r2 -mabi=32 -mfp64 -mnan=2008 
 	-fno-unwind-tables -fno-asynchronous-unwind-tables
 SOURCES = src/app.c src/render.c core/arcade_core.c core/breakout_core.c core/game_framework.c
 OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o)
-CARD = dist/.q2-arcade
+CARD = dist/.arcade
 
 all: dist/q2-arcade.zip
 
