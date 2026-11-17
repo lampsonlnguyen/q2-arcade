@@ -126,6 +126,8 @@ static const unsigned char *glyph(char c) {
     return 0;
 }
 static void text(u32 *d, unsigned s, int x, int y, const char *str, u32 color, int scale) {
+    int step=scale==3?3:scale*2;
+    if(scale==3)scale=1;
     for (; *str; ++str) {
         const unsigned char *g = glyph(*str);
         if (g) {
@@ -151,12 +153,12 @@ static void text(u32 *d, unsigned s, int x, int y, const char *str, u32 color, i
             ui_pixel(d,s,x+2*scale,y+2*scale,scale,color);
             ui_pixel(d,s,x+2*scale,y+4*scale,scale,color);
         }
-        x += 6*scale;
+        x += 3*step;
     }
 }
 static void centered(u32 *d,unsigned s,int y,const char *str,u32 c,int scale) {
     int n=0; while(str[n]) ++n;
-    text(d,s,(SCREEN_W-n*6*scale)/2,y,str,c,scale);
+    text(d,s,(SCREEN_W-n*(scale==3?9:6*scale))/2,y,str,c,scale);
 }
 static void number(u32 *d, unsigned s, int x, int y, unsigned value, u32 c, int scale) {
     char out[12]; int n=0;
@@ -166,18 +168,18 @@ static void number(u32 *d, unsigned s, int x, int y, unsigned value, u32 c, int 
 }
 static void line_heading(u32*d,unsigned s,const char*name) {
     fill(d,s,0,0,SCREEN_W,47,BG);
-    centered(d,s,18,name,WHITE,2);
+    centered(d,s,18,name,WHITE,3);
     fill(d,s,20,47,335,1,OUTLINE);
 }
 static void options(u32*d,unsigned s,const char*heading,const char*const*names,int count,int selected) {
     fill(d,s,57,75,261,229,BLACK);
     border(d,s,57,75,261,229,OUTLINE);
-    centered(d,s,89,heading,WHITE,2);
+    centered(d,s,89,heading,WHITE,3);
     int spacing=count==4?43:count==3?57:72;
     for(int i=0;i<count;++i){
         int y=123+i*spacing;
         fill(d,s,77,y,221,spacing-8,i==selected?SELECT:PANEL);
-        text(d,s,91,y+11,names[i],i==selected?selected_text:DIM,2);
+        text(d,s,91,y+11,names[i],i==selected?selected_text:DIM,3);
     }
 }
 /* Compact 3x5 capitals keep bottom hints clear of the rounded glass. */
@@ -221,25 +223,9 @@ static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
     u32 secondary=bright?0x555c64:DIM;
     fill(d,stride,0,0,SCREEN_W,SCREEN_H,paper);
 
-    if(classic) {
-        /* Classic's status bar has a dark face above its light paper list. */
-        fill(d,stride,0,0,SCREEN_W,47,0x1c1c1c);
-        centered(d,stride,18,"Q2 ARCADE",WHITE,2);
-        fill(d,stride,0,46,SCREEN_W,1,0x595959);
-    } else if(modern) {
-        /* Modern uses a flat theme-accent bar, square list rows. */
-        fill(d,stride,0,0,SCREEN_W,47,bright?0xe4e4e4:0x1d222a);
-        centered(d,stride,18,"Q2 ARCADE",ink,2);
-        fill(d,stride,20,47,335,2,accent);
-    } else {
-        /* Minimal leaves the dark/ivory surface and highlights cards. */
-        centered(d,stride,18,"Q2 ARCADE",ink,2);
-        fill(d,stride,32,48,SCREEN_W-64,1,bright?0xbfc0bd:OUTLINE);
-    }
-
-    centered(d,stride,69,"SELECT A GAME",secondary,2);
+    line_heading(d,stride,"Q2 ARCADE");
     for(int i=0;i<3;++i) {
-        int y=86+i*58;
+        int y=MENU_TOP+i*MENU_PITCH;
         int selected=(i==selection);
         if(classic) {
             /* 49px menu hitbox, iPod-style glossy blue/accent highlight.
@@ -247,29 +233,29 @@ static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
             if(selected) {
                 u32 top=theme->accent==9?0x08a6e7:blend(accent,WHITE,34,100);
                 u32 bottom=theme->accent==9?0x0065d6:blend(accent,BLACK,20,100);
-                for(int n=0;n<49;++n)
-                    fill(d,stride,27,y+n,321,1,blend(top,bottom,(unsigned)n,48));
+                for(int n=0;n<MENU_ROW_H;++n)
+                    fill(d,stride,27,y+n,321,1,blend(top,bottom,(unsigned)n,MENU_ROW_H-1));
                 fill(d,stride,27,y,321,1,blend(top,WHITE,22,100));
-                fill(d,stride,27,y+48,321,1,blend(bottom,BLACK,30,100));
+                fill(d,stride,27,y+MENU_ROW_H-1,321,1,blend(bottom,BLACK,30,100));
             } else {
-                fill(d,stride,27,y+48,321,1,0xd4d4d4);
+                fill(d,stride,27,y+MENU_ROW_H-1,321,1,0xd4d4d4);
             }
-            text(d,stride,48,y+17,names[i],selected?WHITE:ink,2);
-            if(selected)text(d,stride,311,y+17,">",WHITE,2);
+            text(d,stride,48,y+11,names[i],selected?WHITE:ink,3);
+            if(selected)text(d,stride,311,y+11,">",WHITE,3);
         } else if(modern) {
-            fill(d,stride,28,y,319,49,selected?accent:(bright?0xfafafa:0x252b35));
-            if(!selected)fill(d,stride,28,y+48,319,1,bright?0xd0d0d0:OUTLINE);
-            text(d,stride,48,y+17,names[i],selected?WHITE:ink,2);
-            if(selected)text(d,stride,312,y+17,">",WHITE,2);
+            fill(d,stride,28,y,319,MENU_ROW_H,selected?accent:(bright?0xfafafa:0x252b35));
+            if(!selected)fill(d,stride,28,y+MENU_ROW_H-1,319,1,bright?0xd0d0d0:OUTLINE);
+            text(d,stride,48,y+11,names[i],selected?WHITE:ink,3);
+            if(selected)text(d,stride,312,y+11,">",WHITE,3);
         } else {
             /* Minimal's accent-framed selection card. */
             u32 tile=bright?0xffffff:0x1e2934;
             u32 edge=selected?accent:(bright?0xc6c8ca:OUTLINE);
-            fill(d,stride,30,y+2,315,45,tile);
-            border(d,stride,30,y+2,315,45,edge);
-            if(selected)fill(d,stride,35,y+7,4,35,accent);
-            text(d,stride,53,y+17,names[i],ink,2);
-            if(selected)text(d,stride,314,y+17,">",accent,2);
+            fill(d,stride,30,y+2,315,MENU_ROW_H-4,tile);
+            border(d,stride,30,y+2,315,MENU_ROW_H-4,edge);
+            if(selected)fill(d,stride,35,y+7,4,MENU_ROW_H-14,accent);
+            text(d,stride,53,y+11,names[i],ink,3);
+            if(selected)text(d,stride,314,y+11,">",accent,3);
         }
     }
     centered(d,stride,282,"WHEEL SELECT  CENTER OPEN",secondary,1);
@@ -291,9 +277,9 @@ static void blocks(u32*d,unsigned s,const ArcadeApp*a) {
     const Q2Blocks*b=&a->blocks;
     line_heading(d,s,"BLOCKS");
     text(d,s,47,63,"SCORE",DIM,1);
-    number(d,s,47,79,b->score,WHITE,2);
+    number(d,s,47,79,b->score,WHITE,3);
     text(d,s,258,63,"LEVEL",DIM,1);
-    number(d,s,272,80,b->level,WHITE,2);
+    number(d,s,272,80,b->level,WHITE,3);
     fill(d,s,102,66,112,222,BLACK);
     border(d,s,101,65,114,224,OUTLINE);
     for(int y=0;y<Q2_BOARD_H;++y)
@@ -302,7 +288,7 @@ static void blocks(u32*d,unsigned s,const ArcadeApp*a) {
             fill(d,s,103+x*11,67+y*11,10,10,
                  cell>0&&cell<8?palette[cell]:PANEL);
         }
-    text(d,s,253,130,"NEXT",DIM,2);
+    text(d,s,253,130,"NEXT",DIM,3);
     for(int y=0;y<4;++y)
         for(int x=0;x<4;++x){
             int cell=q2_blocks_next_cell(b,x,y);

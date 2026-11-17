@@ -163,8 +163,8 @@ int app_input(ArcadeApp *a, const char *message) {
     if (message[0] == 't' && message[2] == 'u') {
         int y = number(&p);
         if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return 0;
-        if (a->view == VIEW_SELECT && y >= 86 && y < 260) {
-            a->selection = (y - 86) / 58;
+        if (a->view == VIEW_SELECT && y >= MENU_TOP && y < MENU_TOP + 3 * MENU_PITCH) {
+            a->selection = (y - MENU_TOP) / MENU_PITCH;
             if (a->selection > 2) a->selection = 2;
             return select_option(a);
         }

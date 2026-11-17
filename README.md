@@ -85,3 +85,5 @@ Portable games and framework were developed for the `new-builtin-games` branch o
 ### Appearance
 
 Arcade reads `/mnt/data/config.ini` when opened and follows Q2 Pod’s Minimal, Modern, or Classic theme, its saved accent, and Light Mode. Auto Light Mode inherits the visible firmware screen’s light/dark appearance at launch; reopen Arcade after a theme change or a day/night transition. Classic uses a flat selection band rather than the firmware’s gloss artwork. Game pieces keep distinct colors for readability. Bottom hints use compact 3×5 lettering centered inside the rounded screen.
+
+Menu rows are compact (38-pixel spacing) to leave room for additional entries. Interface text is smaller, with centered headings and safe screen margins.

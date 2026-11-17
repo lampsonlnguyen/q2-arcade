@@ -7,6 +7,7 @@
 #include "game_framework.h"
 #include "theme.h"
 enum { SCREEN_W = 375, SCREEN_H = 320 };
+enum { MENU_TOP = 64, MENU_PITCH = 38, MENU_ROW_H = 34 };
 enum { ARCADE_MENU, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT };
 enum { VIEW_SELECT, VIEW_PLAY, VIEW_PAUSE, VIEW_OVER };
 typedef uint32_t u32;
