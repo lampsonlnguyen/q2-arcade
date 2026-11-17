@@ -110,6 +110,15 @@ static void border(u32 *d, unsigned s, int x, int y, int w, int h, u32 c) {
     fill(d,s,x,y,w,1,c); fill(d,s,x,y+h-1,w,1,c);
     fill(d,s,x,y,1,h,c); fill(d,s,x+w-1,y,1,h,c);
 }
+/* HUD and labels use the shared framework's safe-area geometry. This is
+ * intentionally only for UI/text: background and gameplay drawing remain
+ * full-frame so a rounded corner never changes gameplay coordinates. */
+static void ui_pixel(u32 *d, unsigned s, int x, int y, int scale, u32 color) {
+    for (int yy = 0; yy < scale; ++yy)
+        for (int xx = 0; xx < scale; ++xx)
+            if (q2_game_ui_safe_point(SCREEN_W, SCREEN_H, x + xx, y + yy))
+                fill(d, s, x + xx, y + yy, 1, 1, color);
+}
 static const unsigned char *glyph(char c) {
     if (c >= 'a' && c <= 'z') c -= 32;
     if (c >= 'A' && c <= 'Z') return letters[c - 'A'];
@@ -123,24 +132,24 @@ static void text(u32 *d, unsigned s, int x, int y, const char *str, u32 color, i
             for (int row = 0; row < 7; ++row)
                 for (int col = 0; col < 5; ++col)
                     if (g[row] & (16u >> col))
-                        fill(d,s,x+col*scale,y+row*scale,scale,scale,color);
+                        ui_pixel(d,s,x+col*scale,y+row*scale,scale,color);
         } else if (*str == '-' || *str == ':') {
             int line = *str == '-' ? 3 : 1;
-            fill(d,s,x+scale,y+line*scale,3*scale,scale,color);
-            if (*str == ':') fill(d,s,x+scale,y+5*scale,3*scale,scale,color);
+            ui_pixel(d,s,x+scale,y+line*scale,scale,color), ui_pixel(d,s,x+2*scale,y+line*scale,scale,color), ui_pixel(d,s,x+3*scale,y+line*scale,scale,color);
+            if (*str == ':') ui_pixel(d,s,x+scale,y+5*scale,scale,color), ui_pixel(d,s,x+2*scale,y+5*scale,scale,color), ui_pixel(d,s,x+3*scale,y+5*scale,scale,color);
         } else if (*str == '/') {
             for (int row = 0; row < 7; ++row)
-                fill(d,s,x+(5-row*5/7)*scale,y+row*scale,scale,scale,color);
+                ui_pixel(d,s,x+(5-row*5/7)*scale,y+row*scale,scale,color);
         } else if (*str == '.') {
-            fill(d,s,x+2*scale,y+6*scale,scale,scale,color);
+            ui_pixel(d,s,x+2*scale,y+6*scale,scale,color);
         } else if (*str == '<') {
-            fill(d,s,x+1*scale,y+3*scale,scale,scale,color);
-            fill(d,s,x+2*scale,y+2*scale,scale,scale,color);
-            fill(d,s,x+2*scale,y+4*scale,scale,scale,color);
+            ui_pixel(d,s,x+1*scale,y+3*scale,scale,color);
+            ui_pixel(d,s,x+2*scale,y+2*scale,scale,color);
+            ui_pixel(d,s,x+2*scale,y+4*scale,scale,color);
         } else if (*str == '>') {
-            fill(d,s,x+3*scale,y+3*scale,scale,scale,color);
-            fill(d,s,x+2*scale,y+2*scale,scale,scale,color);
-            fill(d,s,x+2*scale,y+4*scale,scale,scale,color);
+            ui_pixel(d,s,x+3*scale,y+3*scale,scale,color);
+            ui_pixel(d,s,x+2*scale,y+2*scale,scale,color);
+            ui_pixel(d,s,x+2*scale,y+4*scale,scale,color);
         }
         x += 6*scale;
     }
@@ -219,8 +228,8 @@ static void pong(u32*d,unsigned s,const ArcadeApp *a) {
 static void blocks(u32*d,unsigned s,const ArcadeApp*a) {
     const Q2Blocks*b=&a->blocks;
     line_heading(d,s,"BLOCKS");
-    text(d,s,28,63,"SCORE",DIM,1);
-    number(d,s,28,79,b->score,WHITE,2);
+    text(d,s,47,63,"SCORE",DIM,1);
+    number(d,s,47,79,b->score,WHITE,2);
     text(d,s,258,63,"LEVEL",DIM,1);
     number(d,s,272,80,b->level,WHITE,2);
     fill(d,s,102,66,112,222,BLACK);
