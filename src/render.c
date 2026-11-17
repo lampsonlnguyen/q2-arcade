@@ -199,18 +199,80 @@ static void footer(u32 *d,unsigned s,const char *str) {
                 if (font[*str-'A'][y]&(4>>col)) fill(d,s,x+col,293+y,1,1,DIM);
     }
 }
-static void menu(u32*d,unsigned s,int selection) {
-    static const char* names[]={"PONG","BLOCKS","BREAKOUT"};
-    line_heading(d,s,"Q2 ARCADE");
-    centered(d,s,69,"SELECT A GAME",DIM,2);
-    for(int i=0;i<3;++i){
-        int y=86+i*58;
-        fill(d,s,29,y,317,49,i==selection?SELECT:PANEL);
-        border(d,s,29,y,317,49,i==selection?CYAN:OUTLINE);
-        text(d,s,49,y+16,names[i],i==selection?selected_text:WHITE,2);
-        text(d,s,315,y+16,">",i==selection?selected_text:GOLD,2);
+/* Q2 Pod's style conventions: Minimal = accent-framed card;
+ * Modern = flat accent selection bar; Classic = light iPod with gloss band.
+ * These are native framebuffer approximations, not AWTK theme widgets.
+ * Positions intentionally match Arcade's existing wheel/touch hitboxes. */
+static u32 blend(u32 a, u32 b, unsigned n, unsigned total) {
+    if (n > total) n = total;
+    unsigned r = (((a >> 16) & 255u) * (total - n) + ((b >> 16) & 255u) * n) / total;
+    unsigned g = (((a >> 8) & 255u) * (total - n) + ((b >> 8) & 255u) * n) / total;
+    unsigned bl = ((a & 255u) * (total - n) + (b & 255u) * n) / total;
+    return r << 16 | g << 8 | bl;
+}
+static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
+    static const char*const names[]={"PONG","BLOCKS","BREAKOUT"};
+    u32 accent=arcade_theme_accent(theme);
+    int classic=theme->style==ARCADE_CLASSIC;
+    int modern=theme->style==ARCADE_MODERN;
+    int bright=classic || theme->light==1 || (theme->style==ARCADE_MINIMAL && theme->accent==7);
+    u32 paper=bright?0xf4f4f2:BG;
+    u32 ink=bright?0x171b20:WHITE;
+    u32 secondary=bright?0x555c64:DIM;
+    fill(d,stride,0,0,SCREEN_W,SCREEN_H,paper);
+
+    if(classic) {
+        /* Classic's status bar has a dark face above its light paper list. */
+        fill(d,stride,0,0,SCREEN_W,47,0x1c1c1c);
+        centered(d,stride,18,"Q2 ARCADE",WHITE,2);
+        fill(d,stride,0,46,SCREEN_W,1,0x595959);
+    } else if(modern) {
+        /* Modern uses a flat theme-accent bar, square list rows. */
+        fill(d,stride,0,0,SCREEN_W,47,bright?0xe4e4e4:0x1d222a);
+        centered(d,stride,18,"Q2 ARCADE",ink,2);
+        fill(d,stride,20,47,335,2,accent);
+    } else {
+        /* Minimal leaves the dark/ivory surface and highlights cards. */
+        centered(d,stride,18,"Q2 ARCADE",ink,2);
+        fill(d,stride,32,48,SCREEN_W-64,1,bright?0xbfc0bd:OUTLINE);
     }
-    footer(d,s,"WHEEL SELECT  CENTER OPEN");
+
+    centered(d,stride,69,"SELECT A GAME",secondary,2);
+    for(int i=0;i<3;++i) {
+        int y=86+i*58;
+        int selected=(i==selection);
+        if(classic) {
+            /* 49px menu hitbox, iPod-style glossy blue/accent highlight.
+             * Selection stops inherit Classic's active accent. */
+            if(selected) {
+                u32 top=theme->accent==9?0x08a6e7:blend(accent,WHITE,34,100);
+                u32 bottom=theme->accent==9?0x0065d6:blend(accent,BLACK,20,100);
+                for(int n=0;n<49;++n)
+                    fill(d,stride,27,y+n,321,1,blend(top,bottom,(unsigned)n,48));
+                fill(d,stride,27,y,321,1,blend(top,WHITE,22,100));
+                fill(d,stride,27,y+48,321,1,blend(bottom,BLACK,30,100));
+            } else {
+                fill(d,stride,27,y+48,321,1,0xd4d4d4);
+            }
+            text(d,stride,48,y+17,names[i],selected?WHITE:ink,2);
+            if(selected)text(d,stride,311,y+17,">",WHITE,2);
+        } else if(modern) {
+            fill(d,stride,28,y,319,49,selected?accent:(bright?0xfafafa:0x252b35));
+            if(!selected)fill(d,stride,28,y+48,319,1,bright?0xd0d0d0:OUTLINE);
+            text(d,stride,48,y+17,names[i],selected?WHITE:ink,2);
+            if(selected)text(d,stride,312,y+17,">",WHITE,2);
+        } else {
+            /* Minimal's accent-framed selection card. */
+            u32 tile=bright?0xffffff:0x1e2934;
+            u32 edge=selected?accent:(bright?0xc6c8ca:OUTLINE);
+            fill(d,stride,30,y+2,315,45,tile);
+            border(d,stride,30,y+2,315,45,edge);
+            if(selected)fill(d,stride,35,y+7,4,35,accent);
+            text(d,stride,53,y+17,names[i],ink,2);
+            if(selected)text(d,stride,314,y+17,">",accent,2);
+        }
+    }
+    centered(d,stride,282,"WHEEL SELECT  CENTER OPEN",secondary,1);
 }
 static void pong(u32*d,unsigned s,const ArcadeApp *a) {
     const Q2Pong*p=&a->pong;
@@ -274,7 +336,7 @@ static void breakout(u32*d,unsigned s,const ArcadeApp*a) {
 }
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     fill(d,s,0,0,SCREEN_W,SCREEN_H,BG);
-    if(a->view==VIEW_SELECT){menu(d,s,a->selection);return;}
+    if(a->view==VIEW_SELECT){menu(d,s,a->selection,&a->theme);return;}
     if(a->game==ARCADE_PONG)pong(d,s,a);
     else if(a->game==ARCADE_BLOCKS)blocks(d,s,a);
     else if(a->game==ARCADE_BREAKOUT)breakout(d,s,a);
