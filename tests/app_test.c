@@ -7,7 +7,7 @@ static void test_launcher(void) {
     ArcadeApp a;
     app_init(&a, 42, 321, 123);
     assert(a.view==VIEW_SELECT && a.best_blocks==321);
-    assert(app_input(&a,"w -20"));
+    assert(app_input(&a,"w -50"));
     assert(a.selection==1);
     assert(app_input(&a,"k u 218"));
     assert(a.game==ARCADE_BLOCKS && a.view==VIEW_PLAY);
@@ -16,7 +16,7 @@ static void test_launcher(void) {
 static void test_blocks(void) {
     ArcadeApp a;
     app_init(&a, 42, 0, 0);
-    assert(app_input(&a,"w -20"));
+    assert(app_input(&a,"w -50"));
     assert(app_input(&a,"k u 218"));
     int x=a.blocks.x;
     assert(app_input(&a,"k u 223"));
@@ -24,9 +24,17 @@ static void test_blocks(void) {
     assert(app_input(&a,"k u 222"));
     assert(a.blocks.x==x);
     unsigned rotation=a.blocks.rotation;
+    /* Small wheel movement should accumulate, not rotate immediately. */
+    assert(!app_input(&a,"w -15"));
+    assert(!app_input(&a,"w -15"));
     assert(app_input(&a,"w -20"));
     assert(a.blocks.rotation==(rotation+1)%4);
-    assert(app_input(&a,"w 20"));
+    assert(app_input(&a,"w 50"));
+    assert(a.blocks.rotation==rotation);
+    /* Large bursts cannot rotate a piece multiple times per packet. */
+    assert(app_input(&a,"w -160"));
+    assert(a.blocks.rotation==(rotation+1)%4);
+    assert(app_input(&a,"w 50"));
     assert(a.blocks.rotation==rotation);
     int y=a.blocks.y;
     assert(app_input(&a,"k u 171"));
@@ -44,7 +52,7 @@ static void test_blocks(void) {
 static void test_breakout(void) {
     ArcadeApp a;
     app_init(&a, 11, 0, 0);
-    assert(app_input(&a,"w -40"));
+    assert(app_input(&a,"w -100"));
     assert(a.selection==2);
     assert(app_input(&a,"k u 218"));
     assert(a.breakout.remaining==40 && a.breakout.waiting);
