@@ -1,0 +1,7 @@
+# Cross-platform checkout rules: WSL /bin/sh requires Unix line endings.
+*.sh text eol=lf
+Makefile text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+q2app text eol=lf
+*.md text eol=lf
