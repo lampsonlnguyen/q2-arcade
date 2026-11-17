@@ -82,7 +82,12 @@ static int wheel(ArcadeApp *a, int movement) {
     if (a->view == VIEW_PLAY && a->game == ARCADE_BLOCKS) {
         /* A fast wheel flick must not spin a piece multiple times in a
          * single UI frame. One turn per packet is predictable on hardware. */
-        if (steps) (void)q2_blocks_rotate_dir(&a->blocks, steps > 0 ? 1 : -1);
+        if (steps) {
+            (void)q2_blocks_rotate_dir(&a->blocks, steps > 0 ? 1 : -1);
+            /* Do not carry the unused portion of a flick into the next,
+             * possibly opposite, turn. */
+            a->wheel_remainder = 0;
+        }
         return steps != 0;
     }
     if (steps > 8) steps = 8;
