@@ -5,6 +5,7 @@
 #include "arcade_core.h"
 #include "breakout_core.h"
 #include "game_framework.h"
+#include "theme.h"
 enum { SCREEN_W = 375, SCREEN_H = 320 };
 enum { ARCADE_MENU, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT };
 enum { VIEW_SELECT, VIEW_PLAY, VIEW_PAUSE, VIEW_OVER };
@@ -13,6 +14,7 @@ typedef struct {
     Q2Pong pong;
     Q2Blocks blocks;
     Q2Breakout breakout;
+    ArcadeTheme theme;
     unsigned best_blocks, best_breakout, seed, accumulator;
     int game, view, selection, option, wheel_remainder, dirty, quit;
 } ArcadeApp;
