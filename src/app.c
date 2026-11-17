@@ -11,6 +11,7 @@ enum { WHEEL_STEP = 50 };
 static unsigned next_seed(ArcadeApp *a) { return a->seed = a->seed * 1664525u + 1013904223u; }
 void app_init(ArcadeApp *a, unsigned seed, unsigned best_blocks, unsigned best_breakout) {
     *a = (ArcadeApp){0};
+    arcade_theme_defaults(&a->theme);
     a->seed = seed ? seed : 42u;
     a->best_blocks = best_blocks;
     a->best_breakout = best_breakout;
