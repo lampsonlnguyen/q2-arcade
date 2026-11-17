@@ -1,0 +1,34 @@
+# Q2 Arcade architecture and migration
+
+## Scope
+
+Q2 Arcade packages the three games **newly introduced on `q2-pod/new-builtin-games`** (Pong, Blocks, Breakout) into one downloadable Q2 Pod card app. The four older games (Sudoku, Vortex, Solitaire and Snake) are already part of Q2 Pod, so their firmware implementations are **not copied** into this optional app.
+
+This repository **does not** merge or remove firmware changes on the original `new-builtin-games` branch. Firmware-specific code such as `arcade_draw.inc`, `arcade_gameplay.inc`, `games.c`, and `peq.h` references internal firmware APIs and is replaced here by the card's own runtime, menu, drawing and inputs.
+
+## Source-to-card migration
+
+| Original firmware branch | Standalone card app |
+| --- | --- |
+| `patch/arcade_core.c/.h` | `core/arcade_core.c/.h` |
+| `patch/breakout_core.c/.h` | `core/breakout_core.c/.h` |
+| `patch/game_framework.c/.h` | `core/game_framework.c/.h` |
+| `patch/arcade_gameplay.inc` | `src/app.c` |
+| `patch/arcade_draw.inc` | `src/render.c` |
+| Games list and timers inside `patch/games.c` | `src/app.c` and `src/platform_q2.c` |
+| Firmware blob persistence | `.q2-arcade/highscores` on SD |
+| Firmware builder `tools/peq.py` | Standalone `Makefile` and ZIP |
+
+The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
+
+### Adding a fourth arcade game
+
+Implement a new portable core in `core/`, add its launcher registration in `src/app.c`, and draw it in `src/render.c`. This avoids modifying Q2 Pod firmware, but the current card still requires some per-game integration. The separate `game_framework` module is available for a later callback/registry refactor.
+
+### Testing
+
+`make check` runs native C tests without Q2 hardware. `make` cross-compiles a MIPS32 ELF and creates an installable ZIP. GitHub Actions performs both. A physical Shanling Q2 remains necessary to verify wheel direction, touch, frame-rate and persistent scores.
+
+### Card app limitations
+
+A card app is a userspace program and cannot simply reuse firmware-specific AWTK windows or internal `games.c` hooks. Any future migration of the **old four built-in games** would be an additional port rather than a straight file copy. This is a collection of three games, not an app-store service or a dynamic downloader for arbitrary third-party game code.
