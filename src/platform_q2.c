@@ -56,18 +56,6 @@ static void load(void) {
        file.checksum==(SAVE_MAGIC^file.blocks^file.breakout^0xa5a55a5au))
         saved=file;
 }
-/* Load the same [IPOD] settings that Q2 Pod's theme engine reads.
- * Card games are separate processes, so their palettes cannot access
- * firmware theme_t. Read-only; changes take effect next Arcade launch. */
-static void load_theme(void) {
-    static char config[16384];
-    int fd = (int)sc(SYS_OPEN,(long)"/mnt/data/config.ini",O_CLOEXEC,0,0,0,0);
-    if (fd < 0) return;
-    long n = sc(SYS_READ,fd,(long)config,sizeof config,0,0,0);
-    sc(SYS_CLOSE,fd,0,0,0,0,0);
-    if (n > 0 && n <= (long)sizeof config)
-        arcade_theme_parse(&app.theme,config,(unsigned)n);
-}
 static void save(void) {
     struct save file={SAVE_MAGIC,app.best_blocks,app.best_breakout,0};
     file.checksum=SAVE_MAGIC^file.blocks^file.breakout^0xa5a55a5au;
@@ -115,6 +103,8 @@ static void load_theme(const u32 *pixels, unsigned stride) {
             bright+=l>128000; ++total;
         }
     app_theme(config,bright>total/2);
+    arcade_theme_parse(&app.theme,config,used);
+    if (app.theme.light==2) app.theme.light=bright>total/2 ? 1 : 0;
 }
 int q2_main(void) {
     unsigned var[40],fix[17];
@@ -144,10 +134,9 @@ int q2_main(void) {
         sc(SYS_MUNMAP,mapped,(long)fix[5],0,0,0,0);
         sc(SYS_CLOSE,fb,0,0,0,0,0);return 1;
     }
-    load_theme(pixels+front*stride,stride);
     load();
     app_init(&app,now_ms(),saved.blocks,saved.breakout);
-    load_theme();
+    load_theme(pixels+front*stride,stride);
     unsigned visible=front;
     int can_pan=rows>=2*SCREEN_W && (front==0||front==SCREEN_W);
     struct {int fd;short events,revents;} poll_input={input,1,0};
