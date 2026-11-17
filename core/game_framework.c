@@ -66,3 +66,23 @@ void q2_game_paint(const Q2GameRunner *r, void *canvas)
 {
     if (r->hooks && r->hooks->paint) r->hooks->paint(r->context, canvas);
 }
+
+int q2_game_ui_safe_point(int width, int height, int x, int y)
+{
+    if (width <= 0 || height <= 0 || x < 0 || y < 0 ||
+        x >= width || y >= height) return 0;
+
+    /* Keep UI text off the glass edges. Rounded corners require a wider
+     * horizontal inset in the top/bottom 42 pixels. */
+    int edge = width / 24;
+    if (edge < 12) edge = 12;
+    int corner = width / 8;
+    if (corner < edge) corner = edge;
+    int band = height / 8;
+    if (band < 24) band = 24;
+    int vertical = height / 32;
+    if (vertical < 8) vertical = 8;
+    if (y < vertical || y >= height - vertical) return 0;
+    int margin = y < band || y >= height - band ? corner : edge;
+    return x >= margin && x < width - margin;
+}
