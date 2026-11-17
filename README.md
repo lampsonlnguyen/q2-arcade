@@ -37,6 +37,23 @@ Within the pause menu, use the wheel or physical Left/Right buttons to select **
 
 High scores for Blocks and Breakout are saved to `.arcade/highscores` on the SD card.
 
+## Matching the Q2 Pod display theme
+
+The **Arcade game-selection screen** reads the active theme from Q2 Pod's
+`/mnt/data/config.ini` at launch. The same numeric Theme IDs and per-theme
+Accent settings from [DiamondBond's theme sources](https://github.com/DiamondBond/q2-pod/tree/main/assets/themes)
+are used:
+
+- **Minimal:** themed background and accent-outlined selection cards.
+- **Modern:** accent-colored selection bars and flat list layout.
+- **Classic:** light iPod-inspired layout with a glossy accent selection band.
+
+`LIGHT=1` enables a light surface for Minimal/Modern; `LIGHT=2` (Auto)
+currently falls back to a dark surface because the card app cannot query
+the firmware's live light/dark decision. The theme is captured when Arcade
+starts; reopen the app after changing Q2 Pod's theme. Gameplay graphics
+remain independent from the theme.
+
 ## Build from source
 
 On Ubuntu or WSL, install `clang`, `lld`, `make`, `zip`, and a native C compiler. Then:
