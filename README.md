@@ -49,8 +49,7 @@ are used:
 - **Classic:** light iPod-inspired layout with a glossy accent selection band.
 
 `LIGHT=1` enables a light surface for Minimal/Modern; `LIGHT=2` (Auto)
-currently falls back to a dark surface because the card app cannot query
-the firmware's live light/dark decision. The theme is captured when Arcade
+uses the light/dark appearance of the firmware screen at Arcade launch. The theme is captured when Arcade
 starts; reopen the app after changing Q2 Pod's theme. Gameplay graphics
 remain independent from the theme.
 
