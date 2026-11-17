@@ -25,6 +25,17 @@ static void paint(const void *ctx, void *canvas)
 static void reset(void *ctx) { ((Fake *)ctx)->resets++; }
 int main(void)
 {
+    /* Safe area excludes text at all edges and rounded display corners. */
+    assert(!q2_game_ui_safe_point(375, 320, 8, 20));
+    assert(!q2_game_ui_safe_point(375, 320, 360, 20));
+    assert(!q2_game_ui_safe_point(375, 320, 8, 295));
+    assert(!q2_game_ui_safe_point(375, 320, 360, 295));
+    assert(!q2_game_ui_safe_point(375, 320, 150, 4));
+    assert(!q2_game_ui_safe_point(375, 320, 150, 315));
+    assert(q2_game_ui_safe_point(375, 320, 49, 290));
+    assert(q2_game_ui_safe_point(375, 320, 47, 79));
+    assert(q2_game_ui_safe_point(375, 320, 187, 18));
+    assert(!q2_game_ui_safe_point(375, 320, -1, 100));
     Fake f = {0};
     const Q2GameHooks hooks = {input, step, paint, reset};
     Q2GameRunner g;
