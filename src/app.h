@@ -20,5 +20,6 @@ void app_init(ArcadeApp *app, unsigned seed, unsigned best_blocks, unsigned best
 int app_input(ArcadeApp *app, const char *message);
 int app_tick(ArcadeApp *app, unsigned elapsed_ms);
 int app_animated(const ArcadeApp *app);
+void app_theme(const char *config, int screen_light);
 void app_render(const ArcadeApp *app, u32 *frame, unsigned stride);
 #endif

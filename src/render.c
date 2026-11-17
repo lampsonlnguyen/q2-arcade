@@ -4,11 +4,71 @@
  */
 #include "app.h"
 
-enum { BG=0x10141c, PANEL=0x19232f, OUTLINE=0x526074,
-       WHITE=0xf0f2f5, DIM=0x98a7b9, CYAN=0x4ad3d6,
-       SELECT=0x396078, GOLD=0xf9ce58, BLACK=0x0b1018 };
+/* Q2 Pod assets/themes and patch/offsets.inc supply the theme IDs and accents.
+ * Read saved settings once at launch; keep the game-piece colors distinct. */
+static u32 BG=0, PANEL=0x191919, OUTLINE=0x444444,
+           WHITE=0xeeeeec, DIM=0x949294, CYAN=0xeeeeec,
+           SELECT=0xeeeeec, GOLD=0xeeeeec, BLACK=0, selected_text=0x161616;
+static int config_number(const char *config, const char *key, int fallback, int limit) {
+    int ipod=0;
+    while (*config) {
+        const char *end=config;
+        while (*end && *end!='\n') ++end;
+        const char *p=config;
+        while (p<end && (*p==' ' || *p=='\t')) ++p;
+        if (p<end && *p=='[') {
+            const char section[]="[IPOD]";
+            int i=0;
+            while (p+i<end && section[i] && p[i]==section[i]) ++i;
+            ipod=i==6;
+        } else if (ipod) {
+            int i=0;
+            while (p+i<end && key[i] && p[i]==key[i]) ++i;
+            if (!key[i]) {
+                p+=i;
+                while (p<end && (*p==' ' || *p=='\t')) ++p;
+                if (p<end && *p++=='=') {
+                    while (p<end && (*p==' ' || *p=='\t')) ++p;
+                    unsigned value=0; int digits=0;
+                    while (p<end && *p>='0' && *p<='9') {
+                        value=value*10+(unsigned)(*p++-'0');
+                        if (value>=(unsigned)limit) return fallback;
+                        digits=1;
+                    }
+                    if (digits && (p==end || *p=='\r' || *p==' ' || *p=='\t' || *p==';' || *p=='#'))
+                        return (int)value;
+                }
+            }
+        }
+        config=*end?end+1:end;
+    }
+    return fallback;
+}
+void app_theme(const char *config, int screen_light) {
+    static const u32 accents[]={0x424242,0xe8123f,0x13838d,0x8c732c,
+        0x2a6ad8,0xc45400,0x903868,0x424242,0x647f34};
+    int theme=config_number(config,"THEME",0,3);
+    const char *key=theme==0?"MINIMAL_ACCENT":theme==1?"CLASSIC_LIGHT_ACCENT":"ACCENT";
+    int accent=config_number(config,key,0,9);
+    if (theme==1) {
+        /* Classic Blue precedes Graphite; Classic has no Ivory. */
+        accent=accent==0?4:accent==8?8:accent-1;
+    } else if (theme==2 && accent==7) accent=0;
+    int mode=config_number(config,"LIGHT",0,3);
+    int light=mode==1 || (mode==2 && screen_light);
+    BG=light?(theme==1?0xffffff:0xf4f4f4):0;
+    BLACK=BG; PANEL=light?0xe7e7e7:0x191919;
+    OUTLINE=light?0xb0b0b0:0x444444;
+    WHITE=light?(theme==1?0:0x161616):0xeeeeec;
+    DIM=light?0x606060:0x949294;
+    CYAN=GOLD=SELECT=accents[accent]; selected_text=0xffffff;
+    if (theme==0 && (accent==0 || accent==7)) {
+        SELECT=light?0x161616:0xeeeeec;
+        CYAN=GOLD=WHITE; selected_text=BG;
+    }
+}
 static const u32 palette[] = {
-    BG, 0x32cbe6, 0xe8cd47, 0xaf80e7, 0x4bc785,
+    0, 0x32cbe6, 0xe8cd47, 0xaf80e7, 0x4bc785,
     0xe86666, 0x578bdf, 0xf39b40
 };
 static const unsigned char letters[26][7] = {
@@ -108,7 +168,26 @@ static void options(u32*d,unsigned s,const char*heading,const char*const*names,i
     for(int i=0;i<count;++i){
         int y=123+i*spacing;
         fill(d,s,77,y,221,spacing-8,i==selected?SELECT:PANEL);
-        text(d,s,91,y+11,names[i],i==selected?WHITE:DIM,2);
+        text(d,s,91,y+11,names[i],i==selected?selected_text:DIM,2);
+    }
+}
+/* Compact 3x5 capitals keep bottom hints clear of the rounded glass. */
+static void footer(u32 *d,unsigned s,const char *str) {
+    static const unsigned char font[26][5]={
+        {2,5,7,5,5},{6,5,6,5,6},{3,4,4,4,3},{6,5,5,5,6},
+        {7,4,6,4,7},{7,4,6,4,4},{3,4,5,5,3},{5,5,7,5,5},
+        {7,2,2,2,7},{1,1,1,5,2},{5,5,6,5,5},{4,4,4,4,7},
+        {5,7,7,5,5},{5,7,7,7,5},{2,5,5,5,2},{6,5,6,4,4},
+        {2,5,5,3,1},{6,5,6,5,5},{3,4,2,1,6},{7,2,2,2,2},
+        {5,5,5,5,7},{5,5,5,5,2},{5,5,7,7,5},{5,5,2,5,5},
+        {5,5,2,2,2},{7,1,2,4,7}};
+    int n=0; while(str[n]) ++n;
+    int x=(SCREEN_W-(n*4-1))/2;
+    for (;*str;++str,x+=4) {
+        if (*str<'A' || *str>'Z') continue;
+        for (int y=0;y<5;++y)
+            for (int col=0;col<3;++col)
+                if (font[*str-'A'][y]&(4>>col)) fill(d,s,x+col,293+y,1,1,DIM);
     }
 }
 static void menu(u32*d,unsigned s,int selection) {
@@ -119,10 +198,10 @@ static void menu(u32*d,unsigned s,int selection) {
         int y=86+i*58;
         fill(d,s,29,y,317,49,i==selection?SELECT:PANEL);
         border(d,s,29,y,317,49,i==selection?CYAN:OUTLINE);
-        text(d,s,49,y+16,names[i],WHITE,2);
-        text(d,s,315,y+16,">",GOLD,2);
+        text(d,s,49,y+16,names[i],i==selection?selected_text:WHITE,2);
+        text(d,s,315,y+16,">",i==selection?selected_text:GOLD,2);
     }
-    centered(d,s,282,"WHEEL SELECT  CENTER OPEN",DIM,1);
+    footer(d,s,"WHEEL SELECT  CENTER OPEN");
 }
 static void pong(u32*d,unsigned s,const ArcadeApp *a) {
     const Q2Pong*p=&a->pong;
@@ -135,7 +214,7 @@ static void pong(u32*d,unsigned s,const ArcadeApp *a) {
     fill(d,s,34,68+p->player_y*214/240,8,48*214/240,CYAN);
     fill(d,s,333,68+p->cpu_y*214/240,8,48*214/240,WHITE);
     fill(d,s,27+p->ball_x,68+p->ball_y*214/240,7,7,GOLD);
-    centered(d,s,296,"WHEEL MOVE  RETURN PAUSE",DIM,1);
+    footer(d,s,"WHEEL MOVE  RETURN PAUSE");
 }
 static void blocks(u32*d,unsigned s,const ArcadeApp*a) {
     const Q2Blocks*b=&a->blocks;
@@ -161,7 +240,7 @@ static void blocks(u32*d,unsigned s,const ArcadeApp*a) {
         }
     text(d,s,247,235,"BEST",DIM,1);
     number(d,s,247,248,a->best_blocks,WHITE,1);
-    text(d,s,13,297,"WHEEL ROTATE  LEFT RIGHT MOVE",DIM,1);
+    footer(d,s,"WHEEL ROTATE  LEFT RIGHT MOVE");
 }
 static void breakout(u32*d,unsigned s,const ArcadeApp*a) {
     const Q2Breakout*b=&a->breakout;
@@ -182,7 +261,7 @@ static void breakout(u32*d,unsigned s,const ArcadeApp*a) {
     fill(d,s,27+b->paddle_x,68+220*214/240,48,6,CYAN);
     fill(d,s,27+b->ball_x-3,68+b->ball_y*214/240-3,7,7,WHITE);
     if(b->waiting)centered(d,s,215,"CENTER TO LAUNCH",GOLD,1);
-    centered(d,s,296,"WHEEL MOVE  RETURN PAUSE",DIM,1);
+    footer(d,s,"WHEEL MOVE  RETURN PAUSE");
 }
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     fill(d,s,0,0,SCREEN_W,SCREEN_H,BG);

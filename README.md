@@ -65,3 +65,7 @@ For migration notes, implementation boundaries and contributor guidance, see [do
 ## Credits and license
 
 Portable games and framework were developed for the `new-builtin-games` branch of Q2 Pod. Q2 card startup, input and frame-buffer integration follow the approach used in [DiamondBond's Q2 Fidget/Buddy](https://github.com/DiamondBond/q2-fidget), [Q2 2048](https://github.com/lampsonlnguyen/q2-2048) and [Q2 Dino Runner](https://github.com/lampsonlnguyen/q2-dino-runner). Original source remains GPL-3.0-or-later; see [LICENSE](LICENSE). No stock firmware or proprietary game binaries are distributed.
+
+### Appearance
+
+Arcade reads `/mnt/data/config.ini` when opened and follows Q2 Pod’s Minimal, Modern, or Classic theme, its saved accent, and Light Mode. Auto Light Mode inherits the visible firmware screen’s light/dark appearance at launch; reopen Arcade after a theme change or a day/night transition. Classic uses a flat selection band rather than the firmware’s gloss artwork. Game pieces keep distinct colors for readability. Bottom hints use compact 3×5 lettering centered inside the rounded screen.

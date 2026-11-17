@@ -79,6 +79,31 @@ static int bind_input(void) {
     sc(SYS_CLOSE,fd,0,0,0,0,0);
     return -1;
 }
+static void load_theme(const u32 *pixels, unsigned stride) {
+    static char config[16384];
+    int fd=(int)sc(SYS_OPEN,(long)"/mnt/data/config.ini",O_CLOEXEC,0,0,0,0);
+    unsigned used=0;
+    if(fd>=0) {
+        while(used<sizeof config-1) {
+            long n=sc(SYS_READ,fd,(long)(config+used),sizeof config-1-used,0,0,0);
+            if(n==-4)continue;
+            if(n<=0)break;
+            used+=(unsigned)n;
+        }
+        sc(SYS_CLOSE,fd,0,0,0,0,0);
+    }
+    config[used]=0;
+    /* Auto light mode: inherit the already-rendered firmware screen's light
+     * half, avoiding a second timezone/clock implementation in a card app. */
+    int bright=0,total=0;
+    for(int x=40;x<SCREEN_W-40;x+=40)
+        for(int y=60;y<SCREEN_H-30;y+=35) {
+            u32 c=pixels[x*stride+SCREEN_H-1-y];
+            unsigned l=((c>>16)&255)*299+((c>>8)&255)*587+(c&255)*114;
+            bright+=l>128000; ++total;
+        }
+    app_theme(config,bright>total/2);
+}
 int q2_main(void) {
     unsigned var[40],fix[17];
     int fb=(int)sc(SYS_OPEN,(long)"/dev/fb0",O_RDWR|O_CLOEXEC,0,0,0,0);
@@ -107,6 +132,7 @@ int q2_main(void) {
         sc(SYS_MUNMAP,mapped,(long)fix[5],0,0,0,0);
         sc(SYS_CLOSE,fb,0,0,0,0,0);return 1;
     }
+    load_theme(pixels+front*stride,stride);
     load();
     app_init(&app,now_ms(),saved.blocks,saved.breakout);
     unsigned visible=front;
