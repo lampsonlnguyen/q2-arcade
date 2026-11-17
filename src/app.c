@@ -5,7 +5,9 @@
 #include "app.h"
 enum { KEY_RETURN = 170, KEY_PLAY = 171, KEY_PREV = 172, KEY_NEXT = 173,
        KEY_CENTER = 218, KEY_LEFT = 222, KEY_RIGHT = 223 };
-enum { WHEEL_STEP = 20 };
+/* Q2 reports about 200 wheel units per full turn. One quarter turn rotates
+ * Blocks one step, rather than ten rotations per revolution. */
+enum { WHEEL_STEP = 50 };
 static unsigned next_seed(ArcadeApp *a) { return a->seed = a->seed * 1664525u + 1013904223u; }
 void app_init(ArcadeApp *a, unsigned seed, unsigned best_blocks, unsigned best_breakout) {
     *a = (ArcadeApp){0};
@@ -77,13 +79,14 @@ static int wheel(ArcadeApp *a, int movement) {
     a->wheel_remainder -= movement;
     int steps = a->wheel_remainder / WHEEL_STEP;
     a->wheel_remainder %= WHEEL_STEP;
-    if (steps > 8) steps = 8;
-    if (steps < -8) steps = -8;
     if (a->view == VIEW_PLAY && a->game == ARCADE_BLOCKS) {
-        for (int i = 0; i < (steps < 0 ? -steps : steps); ++i)
-            (void)q2_blocks_rotate_dir(&a->blocks, steps > 0 ? 1 : -1);
+        /* A fast wheel flick must not spin a piece multiple times in a
+         * single UI frame. One turn per packet is predictable on hardware. */
+        if (steps) (void)q2_blocks_rotate_dir(&a->blocks, steps > 0 ? 1 : -1);
         return steps != 0;
     }
+    if (steps > 8) steps = 8;
+    if (steps < -8) steps = -8;
     for (int i = 0; i < (steps < 0 ? -steps : steps); ++i)
         shift_option(a, steps > 0 ? 1 : -1);
     return steps != 0;
