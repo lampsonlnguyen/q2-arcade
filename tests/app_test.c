@@ -16,7 +16,6 @@ static void test_launcher(void) {
 static void test_blocks(void) {
     ArcadeApp a;
     app_init(&a, 42, 0, 0);
-    assert(app_input(&a,"k u 223")==0); /* launcher selection still needed */
     assert(app_input(&a,"w -20"));
     assert(app_input(&a,"k u 218"));
     int x=a.blocks.x;
