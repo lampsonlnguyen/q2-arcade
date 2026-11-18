@@ -289,57 +289,206 @@ static void breakout(u32*d,unsigned s,const ArcadeApp*a) {
     if(b->waiting)centered(d,s,215,"CENTER TO LAUNCH",GOLD,1);
     footer(d,s,"WHEEL MOVE  RETURN PAUSE");
 }
-static void mini_grid(u32*d,unsigned s,const ArcadeApp*a){
-    const Q2Mini*g=&a->mini;
-    const char *title=a->game==ARCADE_TTT?"TIC TAC TOE":
-                      a->game==ARCADE_CONNECT?"CONNECT FOUR":"BATTLESHIP";
-    line_heading(d,s,title);
-    int cols=a->game==ARCADE_TTT?3:a->game==ARCADE_CONNECT?7:6;
-    int rows=a->game==ARCADE_TTT?3:6;
-    int x0=a->game==ARCADE_TTT?70:a->game==ARCADE_CONNECT?40:56;
-    int y0=a->game==ARCADE_TTT?70:a->game==ARCADE_CONNECT?70:69;
-    int cw=a->game==ARCADE_TTT?80:a->game==ARCADE_CONNECT?42:44;
-    int ch=a->game==ARCADE_TTT?72:a->game==ARCADE_CONNECT?35:36;
-    fill(d,s,x0-4,y0-4,cols*cw+8,rows*ch+8,OUTLINE);
-    for(int y=0;y<rows;y++)for(int x=0;x<cols;x++){
-        int chosen=(a->game==ARCADE_CONNECT?g->cursor==x:g->cursor==y*cols+x);
-        int mark=g->board[y][x];
-        u32 base=chosen?0x4c5e73:0x252e3c;
-        fill(d,s,x0+x*cw+2,y0+y*ch+2,cw-4,ch-4,base);
-        if(mark==1){
-            if(a->game==ARCADE_TTT)text(d,s,x0+x*cw+cw/2-8,y0+y*ch+ch/2-9,"X",CYAN,3);
-            else if(a->game==ARCADE_CONNECT)fill(d,s,x0+x*cw+9,y0+y*ch+7,cw-18,ch-14,CYAN);
-            else text(d,s,x0+x*cw+cw/2-7,y0+y*ch+ch/2-8,"X",CYAN,3);
-        }else if(mark==2){
-            if(a->game==ARCADE_TTT)text(d,s,x0+x*cw+cw/2-8,y0+y*ch+ch/2-9,"O",GOLD,3);
-            else fill(d,s,x0+x*cw+9,y0+y*ch+7,cw-18,ch-14,GOLD);
-        }
-        if(mark==3)fill(d,s,x0+x*cw+cw/2-2,y0+y*ch+ch/2-2,5,5,DIM);
-        if(chosen)border(d,s,x0+x*cw,y0+y*ch,cw,ch,WHITE);
-    }
-    if(a->game==ARCADE_BATTLE){
-        text(d,s,42,50,"HITS",DIM,1);number(d,s,83,50,g->score,WHITE,1);
-        text(d,s,194,50,"SHOTS",DIM,1);number(d,s,245,50,18-g->moves,WHITE,1);
-    }
-    footer(d,s,a->game==ARCADE_TTT?"WHEEL CELL CENTER MARK":
-               a->game==ARCADE_CONNECT?"WHEEL COLUMN CENTER DROP":"WHEEL CELL CENTER FIRE");
+/* Original fixed-point/pixel primitives: no textures, heap or SDL. */
+static void disc(u32*d,unsigned s,int cx,int cy,int radius,u32 color){
+    for(int y=-radius;y<=radius;y++)
+        for(int x=-radius;x<=radius;x++)
+            if(x*x+y*y<=radius*radius)fill(d,s,cx+x,cy+y,1,1,color);
 }
-static void mini_lcd(u32*d,unsigned s,const ArcadeApp*a){
+static void stroke(u32*d,unsigned s,int x0,int y0,int x1,int y1,u32 color,int thick){
+    int dx=x1>x0?x1-x0:x0-x1;
+    int dy=y1>y0?y1-y0:y0-y1;
+    int sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx-dy;
+    for(;;){
+        fill(d,s,x0-thick/2,y0-thick/2,thick,thick,color);
+        if(x0==x1&&y0==y1)break;
+        int e=2*err;
+        if(e>-dy){err-=dy;x0+=sx;}
+        if(e<dx){err+=dx;y0+=sy;}
+    }
+}
+static void tic_tac(u32*d,unsigned s,const ArcadeApp*a){
     const Q2Mini*g=&a->mini;
-    line_heading(d,s,a->game==ARCADE_ROAD?"ROAD DODGE":"CATCH");
-    text(d,s,44,55,"SCORE",DIM,1);number(d,s,93,55,g->score,WHITE,1);
-    text(d,s,236,55,"LIVES",DIM,1);number(d,s,286,55,g->lives,WHITE,1);
-    fill(d,s,77,74,221,213,BLACK);
-    border(d,s,77,74,221,213,OUTLINE);
+    line_heading(d,s,"TIC TAC TOE");
+    centered(d,s,52,"YOU ARE X  -  CPU IS O",DIM,1);
+    fill(d,s,60,80,255,202,0x18283a);
+    for(int j=1;j<3;j++){
+        fill(d,s,60+j*85,83,3,196,0x74a0b4);
+        fill(d,s,63,80+j*67,249,3,0x74a0b4);
+    }
+    for(int i=0;i<9;i++){
+        int col=i%3,row=i/3,cx=60+col*85+42,cy=80+row*67+33;
+        if(i==g->cursor)border(d,s,63+col*85,83+row*67,79,61,0xffcf64);
+        if(g->board[row][col]==1){
+            stroke(d,s,cx-20,cy-17,cx+20,cy+17,0x72dbf7,5);
+            stroke(d,s,cx+20,cy-17,cx-20,cy+17,0x72dbf7,5);
+        }else if(g->board[row][col]==2){
+            disc(d,s,cx,cy,22,0xffcc66);disc(d,s,cx,cy,16,0x18283a);
+        }
+    }
+    footer(d,s,"WHEEL SELECT  CENTER PLACE X");
+}
+static void connect_four(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Mini*g=&a->mini;
+    line_heading(d,s,"CONNECT FOUR");
+    text(d,s,56,52,"RED YOU",0xf2a2a2,1);
+    text(d,s,242,52,"YELLOW CPU",0xf5d878,1);
+    /* Bright blue game frame with recessed round disc slots. */
+    fill(d,s,33,73,309,212,0x163b82);
+    fill(d,s,39,79,297,200,0x2466c7);
+    for(int y=0;y<6;y++)for(int x=0;x<7;x++){
+        int cx=61+x*42,cy=97+y*33;
+        disc(d,s,cx+1,cy+2,15,0x103567);
+        u32 color=g->board[y][x]==1?0xe83d42:
+                  g->board[y][x]==2?0xffd847:0x0b2034;
+        disc(d,s,cx,cy,14,color);
+        if(g->board[y][x]){
+            disc(d,s,cx-4,cy-5,4,g->board[y][x]==1?0xff8b82:0xffee9a);
+        }else disc(d,s,cx-4,cy-5,3,0x24476d);
+        if(x==g->cursor&&y==0)
+            fill(d,s,cx-18,76,36,2,0xffec75);
+    }
+    disc(d,s,61+g->cursor*42,67,6,0xffd847);
+    footer(d,s,"WHEEL COLUMN  CENTER DROP");
+}
+static void ocean(u32*d,unsigned s,int x,int y,int w,int h){
+    fill(d,s,x,y,w,h,0x075070);
+    for(int j=0;j<h;j+=18){
+        fill(d,s,x,y+j,w,8,(j/18)%2?0x0e617f:0x0a5777);
+        for(int i=8+(j%23);i<w-10;i+=33)
+            fill(d,s,x+i,y+j+5,17,1,0x278ca2);
+    }
+}
+static void ship_icon(u32*d,unsigned s,int x,int y,int w,int h,u32 color){
+    /* Top-down gunboat: bow, stern, bridge, deck, hatches and wakes. */
+    fill(d,s,x+4,y+h/2-3,w-8,6,0x062d43);
+    fill(d,s,x+7,y+h/2-5,w-14,10,color);
+    fill(d,s,x+12,y+h/2-2,w-24,4,0xc9d5d6);
+    fill(d,s,x+w/2-5,y+h/2-4,10,8,0x1a3347);
+    fill(d,s,x+w/2-2,y+h/2-7,4,14,0xdfe6d9);
+    stroke(d,s,x+4,y+h/2,x,y+h/2-1,0xb0e8e9,1);
+    stroke(d,s,x+4,y+h/2,x,y+h/2+1,0xb0e8e9,1);
+}
+static void battleship(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Mini*g=&a->mini;
+    line_heading(d,s,"BATTLESHIP");
+    /* Always-visible ship silhouette advertises the naval setting. */
+    ocean(d,s,25,49,326,237);
+    ship_icon(d,s,23,49,64,16,0x9ebbc4);
+    text(d,s,99,51,"HITS",0xddf5fb,1);number(d,s,135,51,g->score,0xffce60,1);
+    text(d,s,209,51,"SHOTS",0xddf5fb,1);
+    number(d,s,257,51,g->lives-g->moves,0xffce60,1);
+    for(int y=0;y<6;y++)for(int x=0;x<6;x++){
+        int xx=56+x*44,yy=69+y*36;
+        int selected=g->cursor==y*6+x;
+        int mark=g->board[y][x];
+        int id=(int)g->ship_id[y][x];
+        fill(d,s,xx+1,yy+1,42,34,((x+y)&1)?0x116381:0x0d5b79);
+        if(id&&(g->ship_hits[id-1]==g->ship_length[id-1]||g->finished)){
+            /* Reveal each ship segment with a tiny steel hull. */
+            fill(d,s,xx+7,yy+11,30,13,0x223c4d);
+            fill(d,s,xx+9,yy+13,26,9,0x98b5bd);
+            fill(d,s,xx+19,yy+15,6,5,0xe8f0e8);
+        }
+        if(mark==1){
+            disc(d,s,xx+22,yy+18,11,0xf04c3e);
+            disc(d,s,xx+22,yy+18,5,0xffc262);
+            stroke(d,s,xx+14,yy+10,xx+30,yy+26,0xffebc4,2);
+        }else if(mark==3){
+            disc(d,s,xx+22,yy+18,8,0x7ed1e5);
+            disc(d,s,xx+22,yy+18,4,0x135575);
+        }
+        if(selected){
+            border(d,s,xx+1,yy+1,42,34,0xffdb61);
+            fill(d,s,xx+19,yy+2,6,3,0xffdb61);
+        }
+    }
+    if(g->last_result==3)text(d,s,83,270,"SHIP SUNK",0xffd665,1);
+    else if(g->last_result==1)text(d,s,98,270,"DIRECT HIT",0xffd665,1);
+    else if(g->last_result==2)text(d,s,112,270,"SPLASH",0xc0e5f5,1);
+    footer(d,s,"WHEEL AIM  CENTER FIRE");
+}
+static void car(u32*d,unsigned s,int cx,int y,u32 body,int enemy){
+    /* Readable top-down automobile: tires, hood, windshield, cabin,
+       headlights and rear lights. */
+    fill(d,s,cx-19,y+9,5,11,0x111923);
+    fill(d,s,cx+14,y+9,5,11,0x111923);
+    fill(d,s,cx-19,y+29,5,11,0x111923);
+    fill(d,s,cx+14,y+29,5,11,0x111923);
+    fill(d,s,cx-15,y+3,30,44,0x172332);
+    fill(d,s,cx-13,y+4,26,42,body);
+    fill(d,s,cx-10,y+14,20,13,enemy?0x7fbbd0:0xa6e0f4);
+    fill(d,s,cx-10,y+29,20,5,0x253b55);
+    fill(d,s,cx-11,y+5,7,4,enemy?0xfc8c74:0xffed91);
+    fill(d,s,cx+4,y+5,7,4,enemy?0xfc8c74:0xffed91);
+    fill(d,s,cx-11,y+39,7,4,enemy?0xfff3cc:0xf54b47);
+    fill(d,s,cx+4,y+39,7,4,enemy?0xfff3cc:0xf54b47);
+    fill(d,s,cx-2,y+14,4,13,0xd6eef5);
+}
+static void road_dodge(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Mini*g=&a->mini;
+    line_heading(d,s,"ROAD DODGE");
+    text(d,s,36,52,"SCORE",DIM,1);number(d,s,82,52,g->score,WHITE,1);
+    text(d,s,239,52,"LIVES",DIM,1);number(d,s,286,52,g->lives,WHITE,1);
+    fill(d,s,28,68,319,220,0x357d48);
+    /* Edge grass, asphalt, curb and dashed moving lane markers. */
+    fill(d,s,77,69,221,218,0x65757b);
+    fill(d,s,81,69,213,218,0x343b45);
+    fill(d,s,83,69,3,218,0xffd568);
+    fill(d,s,289,69,3,218,0xffd568);
     for(int lane=1;lane<3;lane++)
-        for(int y=85;y<275;y+=24)fill(d,s,77+lane*73,y,2,13,OUTLINE);
-    int ox=94+g->obstacle*73;
-    int oy=78+g->obstacle_y*25;
-    if(g->obstacle_y>=0 && oy<265)
-        fill(d,s,ox,oy,a->game==ARCADE_ROAD?35:19,12,
-             a->game==ARCADE_ROAD?GOLD:CYAN);
-    fill(d,s,94+g->lane*73,257,35,20,a->game==ARCADE_ROAD?CYAN:GOLD);
-    footer(d,s,"WHEEL OR LEFT RIGHT MOVE");
+        for(int y=79+(g->obstacle_y*4)%22;y<281;y+=28)
+            fill(d,s,80+lane*71,y,3,14,0xe9e9db);
+    if(g->obstacle_y>=0){
+        int oy=72+g->obstacle_y*23;
+        if(oy<235)car(d,s,116+g->obstacle*71,oy,0xf0a632,1);
+    }
+    car(d,s,116+g->lane*71,232,0x23b9d5,0);
+    footer(d,s,"WHEEL OR LEFT RIGHT STEER");
+}
+static void apple(u32*d,unsigned s,int cx,int cy){
+    disc(d,s,cx-5,cy,9,0xec3c3d);
+    disc(d,s,cx+5,cy,9,0xe93632);
+    disc(d,s,cx,cy+4,9,0xd92529);
+    disc(d,s,cx-5,cy-5,3,0xffa6a3);
+    fill(d,s,cx-1,cy-15,3,7,0x634328);
+    stroke(d,s,cx+2,cy-13,cx+9,cy-17,0x5cc16f,3);
+}
+static void basket(u32*d,unsigned s,int cx,int y){
+    fill(d,s,cx-31,y,62,7,0x9a5a2f);
+    fill(d,s,cx-27,y+7,54,18,0xcb8545);
+    fill(d,s,cx-23,y+24,46,5,0x8e562e);
+    for(int x=-23;x<=24;x+=10){
+        stroke(d,s,cx+x,y+9,cx+x+10,y+23,0x8f5129,2);
+    }
+    fill(d,s,cx-30,y+2,60,3,0xf3c078);
+}
+static void catch_apples(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Mini*g=&a->mini;
+    line_heading(d,s,"APPLE CATCH");
+    text(d,s,36,52,"APPLES",DIM,1);number(d,s,96,52,g->score,WHITE,1);
+    text(d,s,240,52,"MISSES",DIM,1);number(d,s,299,52,3-g->lives,WHITE,1);
+    fill(d,s,28,70,319,218,0xb4d8f0);
+    fill(d,s,28,251,319,37,0x71b45a);
+    fill(d,s,28,265,319,23,0x46844a);
+    /* Full tree canopy: trunk with branches, foliage and fixed apples. */
+    fill(d,s,179,76,18,81,0x795332);
+    stroke(d,s,187,107,142,76,0x795332,7);
+    stroke(d,s,187,108,232,78,0x795332,7);
+    disc(d,s,111,90,41,0x3e9658);
+    disc(d,s,161,79,50,0x50a35b);
+    disc(d,s,215,85,48,0x439b56);
+    disc(d,s,268,90,40,0x38914d);
+    disc(d,s,182,102,40,0x57af64);
+    disc(d,s,130,98,6,0xd83434);
+    disc(d,s,247,96,6,0xd83434);
+    disc(d,s,193,110,5,0xd83434);
+    if(g->obstacle_y>=0) {
+        int y=128+g->obstacle_y*15;
+        if(y<260)apple(d,s,116+g->obstacle*71,y);
+    }
+    basket(d,s,116+g->lane*71,253);
+    footer(d,s,"WHEEL MOVE  CATCH RED APPLES");
 }
 
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
@@ -348,13 +497,23 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     if(a->game==ARCADE_PONG)pong(d,s,a);
     else if(a->game==ARCADE_BLOCKS)blocks(d,s,a);
     else if(a->game==ARCADE_BREAKOUT)breakout(d,s,a);
-    else if(a->game<=ARCADE_BATTLE)mini_grid(d,s,a);
-    else mini_lcd(d,s,a);
+    else if(a->game==ARCADE_TTT)tic_tac(d,s,a);
+    else if(a->game==ARCADE_CONNECT)connect_four(d,s,a);
+    else if(a->game==ARCADE_BATTLE)battleship(d,s,a);
+    else if(a->game==ARCADE_ROAD)road_dodge(d,s,a);
+    else catch_apples(d,s,a);
     if(a->view==VIEW_PAUSE) {
         static const char* names[]={"RESUME","RESTART","GAMES","EXIT"};
         options(d,s,"PAUSED",names,4,a->option);
     } else if(a->view==VIEW_OVER) {
         static const char* names[]={"RESTART","GAMES"};
-        options(d,s,"GAME OVER",names,2,a->option);
+        const char *heading="GAME OVER";
+        if(a->game>=ARCADE_TTT) {
+            if(a->mini.outcome==1)heading=a->game==ARCADE_BATTLE?"FLEET SUNK":"YOU WIN";
+            else if(a->mini.outcome==2)heading="CPU WINS";
+            else if(a->game==ARCADE_BATTLE)heading="OUT OF SHOTS";
+            else if(a->game==ARCADE_TTT||a->game==ARCADE_CONNECT)heading="DRAW";
+        }
+        options(d,s,heading,names,2,a->option);
     }
 }
