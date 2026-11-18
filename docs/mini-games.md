@@ -37,8 +37,7 @@ not been bundled.
 All artwork is rendered directly to the framebuffer using bounded integer
 pixel primitives in `src/render.c`:
 
-- Tic-Tac-Toe: a distinct 3x3 playfield with thick cyan X strokes and gold O
-  rings; the CPU follows perfect-play minimax rather than random choices.
+- Tic-Tac-Toe: selectable 3x3, 6x6 and 9x9 playfields with packed transparent cyan X and gold O sprites; 3x3 uses perfect-play minimax, while 6x6 and 9x9 use bounded open-line scoring with immediate win/block detection. Local two-player mode alternates X and O.
 - Connect Four: blue frame and dark circular sockets holding glossy red
   player discs and yellow CPU discs; the selected column is highlighted.
 - Battleship: teal patterned ocean, a ship silhouette, visible shot splashes,

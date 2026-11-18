@@ -12,7 +12,7 @@ CARD = dist/.arcade
 
 all: dist/q2-arcade.zip
 
-build/q2/%.o: %.c src/app.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h
+build/q2/%.o: %.c src/app.h src/font.h src/ttt_sprites.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h
 	mkdir -p $(@D)
 	$(Q2_CC) $(Q2_FLAGS) $(Q2_CFLAGS) -std=c11 -Isrc -Icore -c $< -o $@
 
@@ -35,7 +35,7 @@ build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c
 
-build/menu-theme-test: tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c src/app.h src/theme.h
+build/menu-theme-test: tests/menu_theme_test.c src/ttt_sprites.h src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c src/app.h src/theme.h
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c
 

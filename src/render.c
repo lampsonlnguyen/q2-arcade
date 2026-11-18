@@ -307,26 +307,46 @@ static void stroke(u32*d,unsigned s,int x0,int y0,int x1,int y1,u32 color,int th
         if(e<dx){err+=dx;y0+=sy;}
     }
 }
+/* Packed transparent sprites, tinted and alpha blended without a PNG decoder. */
+#include "ttt_sprites.h"
+static void ttt_piece(u32*d,unsigned s,int x,int y,int size,int mark){
+    u32 color=mark==1?0x72dbf7:0xffcc66;
+    for(int yy=0;yy<size;yy++)for(int xx=0;xx<size;xx++){
+        unsigned alpha=ttt_alpha[mark-1][(yy*64/size)*64+xx*64/size];
+        if(alpha)fill(d,s,x+xx,y+yy,1,1,blend(0x18283a,color,alpha,255));
+    }
+}
+static void tic_setup(u32*d,unsigned s,const ArcadeApp*a){
+    static const char*const boards[]={"BOARD  3 X 3","BOARD  6 X 6","BOARD  9 X 9"};
+    static const char*const rules[]={"3 IN A ROW TO WIN","4 IN A ROW TO WIN","5 IN A ROW TO WIN"};
+    const char*rows[]={a->ttt_pvp?"PLAYER VS PLAYER":"PLAYER VS AI",boards[a->ttt_size_option],"START GAME"};
+    line_heading(d,s,"TIC TAC TOE");
+    centered(d,s,65,"GAME SETUP",DIM,2);
+    for(int i=0;i<3;i++){
+        fill(d,s,47,100+i*48,281,40,i==a->option?SELECT:PANEL);
+        centered(d,s,112+i*48,rows[i],i==a->option?selected_text:WHITE,2);
+    }
+    centered(d,s,260,rules[a->ttt_size_option],DIM,2);
+    footer(d,s,"WHEEL SELECT  CENTER CHANGE");
+}
 static void tic_tac(u32*d,unsigned s,const ArcadeApp*a){
     const Q2Mini*g=&a->mini;
+    int n=g->ttt_size,cell=TTT_BOARD_PIXELS/n,left=(SCREEN_W-cell*n)/2;
     line_heading(d,s,"TIC TAC TOE");
-    centered(d,s,52,"YOU ARE X  -  CPU IS O",DIM,1);
-    fill(d,s,60,80,255,202,0x18283a);
-    for(int j=1;j<3;j++){
-        fill(d,s,60+j*85,83,3,196,0x74a0b4);
-        fill(d,s,63,80+j*67,249,3,0x74a0b4);
+    const char*status=g->ttt_pvp?(g->ttt_turn==1?"PLAYER 1 - X TURN":"PLAYER 2 - O TURN"):"YOU ARE X - AI IS O";
+    centered(d,s,54,status,DIM,2);
+    fill(d,s,left,TTT_BOARD_Y,cell*n,cell*n,0x18283a);
+    for(int j=1;j<n;j++){
+        fill(d,s,left+j*cell,TTT_BOARD_Y,1,cell*n,0x54788e);
+        fill(d,s,left,TTT_BOARD_Y+j*cell,cell*n,1,0x54788e);
     }
-    for(int i=0;i<9;i++){
-        int col=i%3,row=i/3,cx=60+col*85+42,cy=80+row*67+33;
-        if(i==g->cursor)border(d,s,63+col*85,83+row*67,79,61,0xffcf64);
-        if(g->board[row][col]==1){
-            stroke(d,s,cx-20,cy-17,cx+20,cy+17,0x72dbf7,5);
-            stroke(d,s,cx+20,cy-17,cx-20,cy+17,0x72dbf7,5);
-        }else if(g->board[row][col]==2){
-            disc(d,s,cx,cy,22,0xffcc66);disc(d,s,cx,cy,16,0x18283a);
-        }
+    for(int i=0;i<n*n;i++){
+        int col=i%n,row=i/n,x=left+col*cell,y=TTT_BOARD_Y+row*cell;
+        if(i==g->cursor)border(d,s,x+2,y+2,cell-3,cell-3,0xffcf64);
+        int mark=g->board[row][col],size=cell-8;
+        if(mark)ttt_piece(d,s,x+(cell-size)/2,y+(cell-size)/2,size,mark);
     }
-    footer(d,s,"WHEEL SELECT  CENTER PLACE X");
+    footer(d,s,"WHEEL MOVE  CENTER PLACE");
 }
 static void connect_four(u32*d,unsigned s,const ArcadeApp*a){
     const Q2Mini*g=&a->mini;
@@ -494,6 +514,7 @@ static void catch_apples(u32*d,unsigned s,const ArcadeApp*a){
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     fill(d,s,0,0,SCREEN_W,SCREEN_H,BG);
     if(a->view==VIEW_SELECT){menu(d,s,a->selection,&a->theme);return;}
+    if(a->view==VIEW_TTT_SETUP){tic_setup(d,s,a);return;}
     if(a->game==ARCADE_PONG)pong(d,s,a);
     else if(a->game==ARCADE_BLOCKS)blocks(d,s,a);
     else if(a->game==ARCADE_BREAKOUT)breakout(d,s,a);
@@ -513,6 +534,10 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
             else if(a->mini.outcome==2)heading="CPU WINS";
             else if(a->game==ARCADE_BATTLE)heading="OUT OF SHOTS";
             else if(a->game==ARCADE_TTT||a->game==ARCADE_CONNECT)heading="DRAW";
+        }
+        if(a->game==ARCADE_TTT&&a->mini.ttt_pvp){
+            if(a->mini.outcome==1)heading="X WINS";
+            else if(a->mini.outcome==2)heading="O WINS";
         }
         options(d,s,heading,names,2,a->option);
     }

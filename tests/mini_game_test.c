@@ -73,8 +73,42 @@ static void lcd(void){
         assert(g.score+3-g.lives==2);
     }
 }
+static void tic_sizes(void){
+    for(int size=3;size<=9;size+=3){
+        Q2Mini g;mini_ttt_init(&g,size,1,1);
+        int k=g.ttt_target;
+        /* Alternating local turns, rejected occupied move preserves the turn. */
+        assert(mini_select(&g)&&g.moves==1&&g.ttt_turn==2);
+        assert(!mini_select(&g)&&g.ttt_turn==2);
+        g.cursor=size;assert(mini_select(&g)&&g.board[1][0]==2&&g.moves==2);
+        /* A winning run may begin away from the top/left on large boards. */
+        mini_ttt_init(&g,size,1,1);
+        for(int x=size-k;x<size-1;x++)g.board[size-1][x]=1;
+        g.moves=(unsigned)(k-1);g.cursor=size*size-1;
+        assert(mini_select(&g)&&g.finished&&g.outcome==1);
+        mini_ttt_init(&g,size,1,1);g.ttt_turn=2;
+        for(int i=1;i<k;i++)g.board[size-i][i-1]=2;
+        g.cursor=(size-k)*size+k-1;
+        assert(mini_select(&g)&&g.finished&&g.outcome==2);
+        /* Full boards draw rather than hand another turn to the AI. */
+        mini_ttt_init(&g,size,1,1);
+        for(int y=0;y<size;y++)for(int x=0;x<size;x++)
+            g.board[y][x]=(uint8_t)(1+((x+2*y)%4)/2);
+        g.board[0][0]=0;g.moves=(unsigned)(size*size-1);
+        assert(mini_select(&g)&&g.finished&&g.outcome==3);
+        mini_ttt_init(&g,size,1,1);assert(mini_move(&g,-1)&&g.cursor==size*size-1);
+        if(size==3)continue;
+        /* Larger AI completes its win first and blocks an immediate X win. */
+        mini_ttt_init(&g,size,0,1);
+        for(int x=0;x<k-1;x++)g.board[size-1][x]=2;
+        g.cursor=0;assert(mini_select(&g)&&g.outcome==2&&g.finished);
+        mini_ttt_init(&g,size,0,1);
+        for(int x=0;x<k-1;x++)g.board[size-1][x]=1;
+        g.cursor=0;assert(mini_select(&g)&&g.board[size-1][k-1]==2);
+    }
+}
 int main(void){
-    tic();connect();battle();tactical_ai();sinking();lcd();
+    tic_sizes();tic();connect();battle();tactical_ai();sinking();lcd();
     puts("Handheld mini-game tests passed");
     return 0;
 }

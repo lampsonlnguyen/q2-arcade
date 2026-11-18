@@ -73,6 +73,10 @@ static void test_handheld(void) {
             assert(app_input(&a,"w -50"));
         assert(a.selection==kinds[i]-ARCADE_PONG);
         assert(app_input(&a,"k u 218"));
+        if(kinds[i]==ARCADE_TTT){
+            assert(a.view==VIEW_TTT_SETUP);
+            assert(app_input(&a,"t u 180 216"));
+        }
         assert(a.game==kinds[i] && a.view==VIEW_PLAY);
         assert(a.mini.kind==kinds[i]-ARCADE_TTT);
         assert(app_input(&a,"w -50"));
@@ -89,7 +93,28 @@ static void test_handheld(void) {
         assert(a.view==VIEW_SELECT);
     }
 }
+static void test_tic_setup(void){
+    for(int size=3;size<=9;size+=3){
+        ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_PONG;
+        assert(app_input(&a,"k u 218")&&a.view==VIEW_TTT_SETUP);
+        assert(app_input(&a,"k u 170")&&a.view==VIEW_SELECT);
+        assert(app_input(&a,"k u 218")&&a.view==VIEW_TTT_SETUP);
+        assert(app_input(&a,"t u 180 112")&&a.ttt_pvp==1);
+        for(int j=3;j<size;j+=3)assert(app_input(&a,"t u 180 160"));
+        assert(app_input(&a,"t u 180 216")&&a.view==VIEW_PLAY);
+        assert(a.mini.ttt_size==size&&a.mini.ttt_pvp);
+        assert(!app_input(&a,"t u 80 90"));
+        assert(app_input(&a,"t u 180 90")&&a.mini.moves==1&&a.mini.ttt_turn==2);
+        assert(app_input(&a,"k u 171"));
+        assert(app_input(&a,"k u 218")&&a.mini.moves==2&&a.mini.ttt_turn==1);
+        assert(app_input(&a,"k u 170")&&a.view==VIEW_PAUSE);
+        assert(app_input(&a,"k u 223"));
+        assert(app_input(&a,"k u 218")&&a.view==VIEW_PLAY);
+        assert(a.mini.moves==0&&a.mini.ttt_size==size&&a.mini.ttt_pvp);
+    }
+}
 int main(void) {
+    test_tic_setup();
     test_launcher();test_blocks();test_breakout();test_handheld();
     puts("Q2 Arcade card-app input and game integration tests passed");
     return 0;

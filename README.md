@@ -32,7 +32,7 @@ with the list scrolling automatically. Touch selection is also supported.
 | Pong | Wheel or Left/Right moves paddle | Outscore the CPU |
 | Blocks | Wheel rotates, Left/Right moves, Play soft-drops, Centre hard-drops | Clear rows |
 | Breakout | Wheel or Left/Right moves paddle, Centre launches | Break all bricks |
-| Tic-Tac-Toe | Wheel selects a square, Centre marks X, or tap a square | Beat the CPU |
+| Tic-Tac-Toe | Choose AI or local two-player and 3×3, 6×6, or 9×9; wheel selects, Centre places, Play moves down a row, or tap | Connect 3, 4, or 5 marks respectively |
 | Connect Four | Wheel selects a column, Centre drops a disc, or tap a column | Align four against CPU |
 | Battleship | Wheel selects a cell, Centre fires, or tap a cell | Sink four hidden ships (eight segments) in 26 shots |
 | Road Dodge | Wheel, Left/Right, or tap to change lanes | Steer your car around oncoming traffic |
@@ -113,3 +113,9 @@ git push origin v1.0.1
 ```
 
 Once the build and package checks pass, Actions creates the release and attaches **q2-arcade.zip** directly. Re-running the tag build replaces that release's ZIP. Branch pushes and manual branch builds only save Actions artifacts.
+
+### Tic-Tac-Toe setup
+
+Opening Tic-Tac-Toe shows **Player vs AI**, **Board**, and **Start Game**. Select a setting and press Centre (or tap it) to cycle. Two-player mode shares the Q2: Player 1 is X, Player 2 is O, and the turn is shown above the board. Restart keeps your chosen mode and size. Return from setup goes back to the game list.
+
+3×3 requires 3 in a row, 6×6 requires 4, and 9×9 requires 5, horizontally, vertically, or diagonally. The 3×3 AI uses minimax; larger boards use bounded open-line scoring with immediate win/block detection. X and O are original transparent PNG sprites in `assets/sprites`, packed into `src/ttt_sprites.h`; no runtime image decoder is needed. To regenerate them, install Pillow and run `python3 tools/make_ttt_sprites.py`.
