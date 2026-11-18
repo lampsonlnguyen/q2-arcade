@@ -19,6 +19,7 @@ static int decimal(const char *s, unsigned n) {
     return v;
 }
 void arcade_theme_defaults(ArcadeTheme *t) {
+    t->wheel_percent = 50;
     t->style = ARCADE_MINIMAL;
     t->light = 0;
     t->accent = 0; /* Minimal preset: Graphite */
@@ -38,7 +39,8 @@ void arcade_theme_parse(ArcadeTheme *t, const char *config, unsigned size) {
         while (end > from && whitespace(config[end - 1])) --end;
         if (from == end || config[from] == '#' || config[from] == ';') continue;
         if (config[from] == '[' && config[end-1] == ']') {
-            section = key_is(config + from + 1, end - from - 2, "IPOD");
+            section = key_is(config + from + 1, end - from - 2, "IPOD") ? 1
+                    : key_is(config + from + 1, end - from - 2, "Q2POD") ? 2 : 0;
             continue;
         }
         if (!section) continue;
@@ -52,6 +54,11 @@ void arcade_theme_parse(ArcadeTheme *t, const char *config, unsigned size) {
         int value = decimal(config + value_at, end - value_at);
         if (value < 0) continue;
         unsigned key_length = key_end - from;
+        if(section==2){
+            if(key_is(config+from,key_length,"WHEELSENSITIVITY") && value>=10 && value<=200 && value%10==0 && config[value_at]!='0')
+                t->wheel_percent=value;
+            continue;
+        }
         if (key_is(config + from, key_length, "THEME") && value <= 2) style = value;
         else if (key_is(config + from, key_length, "LIGHT") && value <= 2) light = value;
         else if (key_is(config + from, key_length, "MINIMAL_ACCENT") && value <= 8) minimal = value;

@@ -8,6 +8,7 @@ enum { ARCADE_MINIMAL = 0, ARCADE_CLASSIC = 1, ARCADE_MODERN = 2 };
 typedef struct {
     int style;             /* Q2 Pod THEME: 0 Minimal, 1 Classic, 2 Modern */
     int light;             /* LIGHT: 0 dark, 1 light; 2 auto uses dark fallback */
+    int wheel_percent;      /* Q2POD/WHEELSENSITIVITY: 10-200 in tens, default 50 */
     int accent;            /* active theme's accent (0-9) */
 } ArcadeTheme;
 void arcade_theme_defaults(ArcadeTheme *theme);

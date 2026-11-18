@@ -119,3 +119,9 @@ Once the build and package checks pass, Actions creates the release and attaches
 Opening Tic-Tac-Toe shows **Player vs AI**, **Board**, and **Start Game**. Select a setting and press Centre (or tap it) to cycle. Two-player mode shares the Q2: Player 1 is X, Player 2 is O, and the turn is shown above the board. Restart keeps your chosen mode and size. Return from setup goes back to the game list.
 
 3×3 requires 3 in a row, 6×6 requires 4, and 9×9 requires 5, horizontally, vertically, or diagonally. The 3×3 AI uses minimax; larger boards use bounded open-line scoring with immediate win/block detection. X and O are original transparent PNG sprites in `assets/sprites`, packed into `src/ttt_sprites.h`; no runtime image decoder is needed. To regenerate them, install Pillow and run `python3 tools/make_ttt_sprites.py`.
+
+### Wheel sensitivity and AI turns
+
+Arcade reads **System Settings → Controls → Wheel Sensitivity** (`[Q2POD] WHEELSENSITIVITY`) when opened. Menu and grid navigation use the firmware's tick threshold; paddle movement and Blocks rotation scale with the same percentage. Reopen Arcade after changing the setting. Missing or invalid values use Q2 Pod's default 50%.
+
+In Tic-Tac-Toe against AI, your mark appears immediately, followed by **AI THINKING** for 600 ms before O moves. Extra moves are ignored during this pause; pausing freezes the timer. Local two-player mode has no delay.

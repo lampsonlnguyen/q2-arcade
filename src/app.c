@@ -19,7 +19,8 @@ void app_init(ArcadeApp *a, unsigned seed, unsigned best_blocks, unsigned best_b
 static void start(ArcadeApp *a, int game) {
     a->game = game;
     a->view = VIEW_PLAY;
-    a->wheel_remainder = 0;
+    a->wheel_remainder = a->wheel_pixel_remainder = 0;
+    a->ttt_ai_remaining=0;
     a->accumulator = 0;
     if (game == ARCADE_PONG) q2_pong_init(&a->pong);
     else if (game == ARCADE_BLOCKS) q2_blocks_init(&a->blocks, next_seed(a));
@@ -36,6 +37,8 @@ static void save_best(ArcadeApp *a) {
     }
 }
 static void finish(ArcadeApp *a) {
+    if(a->game==ARCADE_TTT&&!a->mini.ttt_pvp&&a->mini.ttt_turn==2&&!a->mini.finished&&!a->ttt_ai_remaining)
+        a->ttt_ai_remaining=TTT_AI_DELAY_MS;
     if ((a->game == ARCADE_BLOCKS && a->blocks.game_over) ||
         (a->game == ARCADE_BREAKOUT && a->breakout.game_over) ||
         (a->game >= ARCADE_TTT && a->mini.finished)) {
@@ -82,16 +85,29 @@ static int wheel(ArcadeApp *a, int movement) {
     if (movement > 1000) movement = 1000;
     if (movement < -1000) movement = -1000;
     if (!movement) return 0;
+    if(a->view==VIEW_PLAY&&a->game==ARCADE_TTT&&a->ttt_ai_remaining)return 0;
+    int pct=a->theme.wheel_percent;
+    /* Q2 games receive unscaled raw travel. Match the firmware's sixteenth-unit
+     * tick threshold (28 units at 50%), retaining fractional packet travel. */
+    int units=(28*16*50+pct/2)/pct;
+    /* Blocks keeps its quarter-turn rotation at 50%, scaled by the same setting. */
+    if(a->view==VIEW_PLAY&&a->game==ARCADE_BLOCKS)units=(WHEEL_STEP*16*50+pct/2)/pct;
     /* Q2 input protocol gives negative travel for clockwise motion. */
     if (a->view == VIEW_PLAY && a->game == ARCADE_PONG) {
-        q2_pong_move(&a->pong, movement * -2); return 1;
+        a->wheel_pixel_remainder-=movement*2*pct;
+        int pixels=a->wheel_pixel_remainder/50;a->wheel_pixel_remainder%=50;
+        q2_pong_move(&a->pong,pixels); return pixels!=0;
     }
     if (a->view == VIEW_PLAY && a->game == ARCADE_BREAKOUT) {
-        q2_breakout_move(&a->breakout, movement * -2); return 1;
+        a->wheel_pixel_remainder-=movement*2*pct;
+        int pixels=a->wheel_pixel_remainder/50;a->wheel_pixel_remainder%=50;
+        q2_breakout_move(&a->breakout,pixels); return pixels!=0;
     }
-    a->wheel_remainder -= movement;
-    int steps = a->wheel_remainder / WHEEL_STEP;
-    a->wheel_remainder %= WHEEL_STEP;
+    int travel=-movement*16;
+    if((travel>0&&a->wheel_remainder<0)||(travel<0&&a->wheel_remainder>0))a->wheel_remainder=0;
+    a->wheel_remainder += travel;
+    int steps = a->wheel_remainder / units;
+    a->wheel_remainder %= units;
     if (a->view == VIEW_PLAY && a->game == ARCADE_BLOCKS) {
         /* A fast wheel flick must not spin a piece multiple times in a
          * single UI frame. One turn per packet is predictable on hardware. */
@@ -205,6 +221,7 @@ int app_input(ArcadeApp *a, const char *message) {
             if (y < 48) return key(a, KEY_RETURN);
             if (a->game >= ARCADE_TTT) {
                 if(a->game==ARCADE_TTT) {
+                    if(a->ttt_ai_remaining)return 0;
                     int n=a->mini.ttt_size,cell=TTT_BOARD_PIXELS/n;
                     int left=(SCREEN_W-cell*n)/2;
                     if(x<left||x>=left+cell*n||y<TTT_BOARD_Y||y>=TTT_BOARD_Y+cell*n)return 0;
@@ -240,12 +257,15 @@ int app_input(ArcadeApp *a, const char *message) {
     return 0;
 }
 int app_animated(const ArcadeApp *a) {
-    return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game >= ARCADE_ROAD);
+    return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game >= ARCADE_ROAD || a->ttt_ai_remaining);
 }
 int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
     if (!app_animated(a)) return 0;
     if (elapsed_ms > 100) elapsed_ms = 100;
-    if (a->game == ARCADE_PONG || a->game == ARCADE_BREAKOUT) {
+    if(a->game==ARCADE_TTT&&a->ttt_ai_remaining){
+        if(elapsed_ms<a->ttt_ai_remaining)a->ttt_ai_remaining-=elapsed_ms;
+        else {a->ttt_ai_remaining=0;(void)mini_tick(&a->mini);}
+    } else if (a->game == ARCADE_PONG || a->game == ARCADE_BREAKOUT) {
         a->accumulator += elapsed_ms * 60u;
         for (int n = 0; n < 6 && a->accumulator >= 1000u; ++n) {
             a->accumulator -= 1000u;

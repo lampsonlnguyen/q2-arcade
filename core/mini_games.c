@@ -229,7 +229,7 @@ void mini_ttt_init(Q2Mini *g,int size,int pvp,uint32_t seed){
     g->ttt_pvp=!!pvp;
 }
 int mini_move(Q2Mini *g,int steps){
-    if(g->finished||!steps)return 0;
+    if(g->finished||!steps||(g->kind==MINI_TTT&&!g->ttt_pvp&&g->ttt_turn==2))return 0;
     int count=g->kind==MINI_TTT?g->ttt_size*g->ttt_size:g->kind==MINI_CONNECT?7:
               g->kind==MINI_BATTLE?36:3;
     if(g->kind>=MINI_ROAD){
@@ -246,14 +246,14 @@ int mini_move(Q2Mini *g,int steps){
 int mini_select(Q2Mini *g){
     if(g->finished)return 0;
     if(g->kind==MINI_TTT){
+        if(!g->ttt_pvp&&g->ttt_turn==2)return 0;
         int row=g->cursor/g->ttt_size,col=g->cursor%g->ttt_size;
         if(g->board[row][col])return 0;
         int mark=g->ttt_turn;
         g->board[row][col]=(uint8_t)mark;g->moves++;
         if(three(g,mark)){g->finished=1;g->won=mark==1;g->outcome=mark;return 1;}
         if(g->moves==(unsigned)(g->ttt_size*g->ttt_size)){g->finished=1;g->outcome=3;return 1;}
-        if(g->ttt_pvp)g->ttt_turn=3-mark;
-        else ttt_cpu(g);
+        g->ttt_turn=3-mark;
         return 1;
     }
     if(g->kind==MINI_CONNECT){
@@ -280,6 +280,10 @@ int mini_select(Q2Mini *g){
     return 0;
 }
 int mini_tick(Q2Mini *g){
+    if(g->kind==MINI_TTT){
+        if(g->finished||g->ttt_pvp||g->ttt_turn!=2)return 0;
+        ttt_cpu(g);g->ttt_turn=1;return 1;
+    }
     if(g->finished||g->kind<MINI_ROAD)return 0;
     ++g->obstacle_y;
     if(g->obstacle_y==8){

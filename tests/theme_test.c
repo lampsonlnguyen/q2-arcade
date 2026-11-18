@@ -35,6 +35,15 @@ int main(void) {
     assert(t.style==ARCADE_MINIMAL);
     arcade_theme_parse(&t,0,0);
     assert(t.style==ARCADE_MINIMAL && t.accent==0);
+    t=parse("[Q2POD]\nWHEELSENSITIVITY=10\n[IPOD]\nTHEME=2\n");
+    assert(t.wheel_percent==10&&t.style==ARCADE_MODERN);
+    t=parse("[Q2POD]\nWHEELSENSITIVITY=200\n");assert(t.wheel_percent==200);
+    t=parse("[IPOD]\nWHEELSENSITIVITY=100\n");assert(t.wheel_percent==50);
+    const char *bad[]={"0","9","201","55","010","oops"};
+    for(unsigned i=0;i<sizeof bad/sizeof bad[0];i++){
+        char config[80];snprintf(config,sizeof config,"[Q2POD]\nWHEELSENSITIVITY=%s\n",bad[i]);
+        t=parse(config);assert(t.wheel_percent==50);
+    }
     puts("theme: all tests passed");
     return 0;
 }

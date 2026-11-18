@@ -52,7 +52,7 @@ static void test_blocks(void) {
 static void test_breakout(void) {
     ArcadeApp a;
     app_init(&a, 11, 0, 0);
-    assert(app_input(&a,"w -100"));
+    assert(app_input(&a,"w -56"));
     assert(a.selection==2);
     assert(app_input(&a,"k u 218"));
     assert(a.breakout.remaining==40 && a.breakout.waiting);
@@ -70,7 +70,7 @@ static void test_handheld(void) {
         ArcadeApp a;
         app_init(&a,31,0,0);
         for(int n=0;n<kinds[i]-ARCADE_PONG;n++)
-            assert(app_input(&a,"w -50"));
+            assert(app_input(&a,"w -28"));
         assert(a.selection==kinds[i]-ARCADE_PONG);
         assert(app_input(&a,"k u 218"));
         if(kinds[i]==ARCADE_TTT){
@@ -113,8 +113,51 @@ static void test_tic_setup(void){
         assert(a.mini.moves==0&&a.mini.ttt_size==size&&a.mini.ttt_pvp);
     }
 }
+static void test_ai_delay(void){
+    ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_PONG;
+    app_input(&a,"k u 218");app_input(&a,"t u 180 216");
+    assert(app_input(&a,"k u 218")&&a.mini.moves==1);
+    assert(a.ttt_ai_remaining==600&&app_animated(&a));
+    assert(!app_input(&a,"k u 218")||a.mini.moves==1);
+    assert(!app_input(&a,"t u 180 90"));
+    assert(!app_input(&a,"w -28"));
+    for(int i=0;i<5;i++)assert(app_tick(&a,100));
+    assert(a.mini.moves==1&&a.ttt_ai_remaining==100);
+    assert(app_input(&a,"k u 170")&&a.view==VIEW_PAUSE);
+    assert(!app_tick(&a,100)&&a.ttt_ai_remaining==100);
+    assert(app_input(&a,"k u 218")&&a.view==VIEW_PLAY);
+    assert(app_tick(&a,99)&&a.mini.moves==1);
+    assert(app_tick(&a,1)&&a.mini.moves==2&&!a.ttt_ai_remaining);
+    assert(!app_animated(&a)&&!app_tick(&a,100));
+    /* A human win never schedules an AI reply. */
+    a.mini.board[0][0]=a.mini.board[0][1]=1;a.mini.board[0][2]=0;a.mini.cursor=2;
+    assert(app_input(&a,"k u 218")&&a.view==VIEW_OVER&&!a.ttt_ai_remaining);
+}
+static void test_wheel_sensitivity(void){
+    ArcadeApp a;app_init(&a,1,0,0);
+    const char config[]="[Q2POD]\nWHEELSENSITIVITY=10\n";
+    arcade_theme_parse(&a.theme,config,sizeof config-1);
+    for(int i=0;i<139;i++)assert(!app_input(&a,"w -1"));
+    assert(app_input(&a,"w -1")&&a.selection==1);
+    app_init(&a,1,0,0);a.theme.wheel_percent=100;
+    assert(!app_input(&a,"w -13"));
+    assert(app_input(&a,"w -1")&&a.selection==1);
+    app_init(&a,1,0,0);a.theme.wheel_percent=200;
+    assert(app_input(&a,"w -7")&&a.selection==1);
+    app_init(&a,1,0,0);a.theme.wheel_percent=160;
+    for(int i=0;i<34;i++)(void)app_input(&a,"w -1");
+    assert(a.selection==3); /* threshold is 8.75, not rounded to 8 */
+    assert(app_input(&a,"w -1")&&a.selection==4);
+    app_init(&a,1,0,0);a.view=VIEW_PLAY;a.game=ARCADE_TTT;
+    mini_ttt_init(&a.mini,3,1,1);a.theme.wheel_percent=10;
+    assert(!app_input(&a,"w -139"));
+    assert(app_input(&a,"w -1")&&a.mini.cursor==1);
+    /* Physical buttons and touch are independent of wheel sensitivity. */
+    assert(app_input(&a,"k u 223")&&a.mini.cursor==2);
+    assert(app_input(&a,"t u 180 90")&&a.mini.moves==1);
+}
 int main(void) {
-    test_tic_setup();
+    test_ai_delay();test_wheel_sensitivity();test_tic_setup();
     test_launcher();test_blocks();test_breakout();test_handheld();
     puts("Q2 Arcade card-app input and game integration tests passed");
     return 0;

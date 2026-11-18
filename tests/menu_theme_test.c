@@ -27,6 +27,7 @@ static void game_art(void) {
     mini_init(&app.mini,MINI_TTT,12);
     app.mini.cursor=0;
     (void)mini_select(&app.mini);
+    (void)mini_tick(&app.mini);
     app_render(&app,frame,SCREEN_H);
     assert(count_color(0x72dbf7)>40); /* blue X */
     assert(count_color(0xffcc66)>40); /* gold O ring */

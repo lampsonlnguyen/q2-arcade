@@ -8,7 +8,7 @@
 #include "game_framework.h"
 #include "theme.h"
 enum { SCREEN_W = 375, SCREEN_H = 320 };
-enum { TTT_BOARD_Y=82, TTT_BOARD_PIXELS=198 };
+enum { TTT_AI_DELAY_MS=600, TTT_BOARD_Y=82, TTT_BOARD_PIXELS=198 };
 enum { MENU_TOP = 64, MENU_PITCH = 38, MENU_ROW_H = 34 };
 enum { ARCADE_MENU, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT,
        ARCADE_TTT, ARCADE_CONNECT, ARCADE_BATTLE, ARCADE_ROAD, ARCADE_CATCH, ARCADE_GAME_COUNT };
@@ -20,6 +20,8 @@ typedef struct {
     Q2Breakout breakout;
     Q2Mini mini;
     ArcadeTheme theme;
+    unsigned ttt_ai_remaining;
+    int wheel_pixel_remainder;
     unsigned best_blocks, best_breakout, seed, accumulator;
     int ttt_size_option, ttt_pvp;
     int game, view, selection, option, wheel_remainder, dirty, quit;

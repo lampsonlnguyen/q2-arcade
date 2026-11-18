@@ -333,7 +333,7 @@ static void tic_tac(u32*d,unsigned s,const ArcadeApp*a){
     const Q2Mini*g=&a->mini;
     int n=g->ttt_size,cell=TTT_BOARD_PIXELS/n,left=(SCREEN_W-cell*n)/2;
     line_heading(d,s,"TIC TAC TOE");
-    const char*status=g->ttt_pvp?(g->ttt_turn==1?"PLAYER 1 - X TURN":"PLAYER 2 - O TURN"):"YOU ARE X - AI IS O";
+    const char*status=g->ttt_pvp?(g->ttt_turn==1?"PLAYER 1 - X TURN":"PLAYER 2 - O TURN"):a->ttt_ai_remaining?"AI THINKING...":"YOU ARE X - AI IS O";
     centered(d,s,54,status,DIM,2);
     fill(d,s,left,TTT_BOARD_Y,cell*n,cell*n,0x18283a);
     for(int j=1;j<n;j++){
