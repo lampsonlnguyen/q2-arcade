@@ -63,8 +63,34 @@ static void test_breakout(void) {
     assert(app_input(&a,"k u 170"));
     assert(a.view==VIEW_PAUSE && !app_animated(&a));
 }
+static void test_handheld(void) {
+    static const int kinds[] = {ARCADE_TTT, ARCADE_CONNECT, ARCADE_BATTLE,
+                                ARCADE_ROAD, ARCADE_CATCH};
+    for(unsigned i=0;i<sizeof kinds/sizeof kinds[0];i++) {
+        ArcadeApp a;
+        app_init(&a,31,0,0);
+        for(int n=0;n<kinds[i]-ARCADE_PONG;n++)
+            assert(app_input(&a,"w -50"));
+        assert(a.selection==kinds[i]-ARCADE_PONG);
+        assert(app_input(&a,"k u 218"));
+        assert(a.game==kinds[i] && a.view==VIEW_PLAY);
+        assert(a.mini.kind==kinds[i]-ARCADE_TTT);
+        assert(app_input(&a,"w -50"));
+        if(kinds[i]<ARCADE_ROAD) {
+            assert(app_input(&a,"k u 218"));
+            assert(a.mini.moves>0);
+        } else {
+            assert(app_animated(&a));
+            assert(app_tick(&a,200));
+        }
+        assert(app_input(&a,"k u 170"));
+        assert(a.view==VIEW_PAUSE);
+        assert(app_input(&a,"k u 170"));
+        assert(a.view==VIEW_SELECT);
+    }
+}
 int main(void) {
-    test_launcher();test_blocks();test_breakout();
+    test_launcher();test_blocks();test_breakout();test_handheld();
     puts("Q2 Arcade card-app input and game integration tests passed");
     return 0;
 }
