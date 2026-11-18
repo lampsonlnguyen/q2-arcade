@@ -192,15 +192,23 @@ int app_input(ArcadeApp *a, const char *message) {
         if (a->view == VIEW_PLAY) {
             if (y < 48) return key(a, KEY_RETURN);
             if (a->game >= ARCADE_TTT) {
-                if(a->game==ARCADE_TTT && x>=70 && x<310 && y>=70 && y<286)
-                    a->mini.cursor=((y-70)/72)*3+(x-70)/80;
-                else if(a->game==ARCADE_CONNECT && x>=40 && x<334 && y>=70 && y<280)
-                    a->mini.cursor=(x-40)/42;
-                else if(a->game==ARCADE_BATTLE && x>=56 && x<320 && y>=69 && y<285)
+                if(a->game==ARCADE_TTT) {
+                    if(x<60||x>=315||y<80||y>=281)return 0;
+                    a->mini.cursor=((y-80)/67)*3+(x-60)/85;
+                } else if(a->game==ARCADE_CONNECT) {
+                    if(x<39||x>=336||y<79||y>=279)return 0;
+                    a->mini.cursor=(x-39)/42;
+                } else if(a->game==ARCADE_BATTLE) {
+                    if(x<56||x>=320||y<69||y>=285)return 0;
                     a->mini.cursor=((y-69)/36)*6+(x-56)/44;
-                else if(a->game>=ARCADE_ROAD && x>=80 && x<296)
-                    a->mini.lane=(x-80)/72;
-                (void)mini_select(&a->mini);finish(a);return 1;
+                } else {
+                    if(x<80||x>=293||y<70||y>=288)return 0;
+                    a->mini.lane=(x-80)/71;
+                    return 1;
+                }
+                int acted=mini_select(&a->mini);
+                if(acted)finish(a);
+                return acted;
             }
             if (a->game == ARCADE_BLOCKS) {
                 if (x < 125) return key(a, KEY_LEFT);
