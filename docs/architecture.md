@@ -2,7 +2,7 @@
 
 ## Scope
 
-Q2 Arcade packages the three games **newly introduced on `q2-pod/new-builtin-games`** (Pong, Blocks, Breakout) into one downloadable Q2 Pod card app. The four older games (Sudoku, Vortex, Solitaire and Snake) are already part of Q2 Pod, so their firmware implementations are **not copied** into this optional app.
+Q2 Arcade packages Pong, Blocks and Breakout from the earlier `q2-pod/new-builtin-games` work, plus five independent, lightweight handheld-style games: Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Catch. The older firmware games (Sudoku, Vortex, Solitaire and Snake) are already part of Q2 Pod, so their firmware implementations are **not copied** into this optional app. The new game mechanics are implemented in `core/mini_games.c` without external handheld ROMs, sprites, or sound assets.
 
 This repository **does not** merge or remove firmware changes on the original `new-builtin-games` branch. Firmware-specific code such as `arcade_draw.inc`, `arcade_gameplay.inc`, `games.c`, and `peq.h` references internal firmware APIs and is replaced here by the card's own runtime, menu, drawing and inputs.
 
@@ -19,7 +19,7 @@ This repository **does not** merge or remove firmware changes on the original `n
 | Firmware blob persistence | `.arcade/highscores` on SD |
 | Firmware builder `tools/peq.py` | Standalone `Makefile` and ZIP |
 
-The portable game modules retain their original state layout and algorithms; they use integer-only physics, static state and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The `q2app` manifest must declare `audio=1`: without it, Q2 Pod's `addon_game_input()` reserves the physical Left, Right, and Play/Pause keys for music rather than forwarding them to the card app. This also stops background music while Arcade is active; Arcade itself does not currently produce sound. Blocks wheel rotation uses a quarter-turn threshold (approximately 50 raw units) and caps each wheel packet at one rotation. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
+Existing portable game modules retain their original state layout and algorithms. The new rules module uses fixed-size arrays, deterministic pseudo-randomness, integer-only updates and no dynamic allocation. Card input is received via the Q2 input datagram protocol. The `q2app` manifest must declare `audio=1`: without it, Q2 Pod's `addon_game_input()` reserves the physical Left, Right, and Play/Pause keys for music rather than forwarding them to the card app. This also stops background music while Arcade is active; Arcade itself does not currently produce sound. Blocks wheel rotation uses a quarter-turn threshold (approximately 50 raw units) and caps each wheel packet at one rotation. The framebuffer is the same rotated 375×320 display exposed to other Q2 card programs.
 
 ## Q2 Pod theme-aware game selection
 
@@ -65,7 +65,7 @@ framework helper rather than duplicating its constants.
 Blocks' Score/score value has moved right; the bottom instruction line is
 also inset from the lower-left rounded corner.
 
-### Adding a fourth arcade game
+### Adding another arcade game
 
 Implement a new portable core in `core/`, add its launcher registration in `src/app.c`, and draw it in `src/render.c`. This avoids modifying Q2 Pod firmware, but the current card still requires some per-game integration. The separate `game_framework` module is available for a later callback/registry refactor.
 
@@ -75,4 +75,4 @@ Implement a new portable core in `core/`, add its launcher registration in `src/
 
 ### Card app limitations
 
-A card app is a userspace program and cannot simply reuse firmware-specific AWTK windows or internal `games.c` hooks. Any future migration of the **old four built-in games** would be an additional port rather than a straight file copy. This is a collection of three games, not an app-store service or a dynamic downloader for arbitrary third-party game code.
+A card app is a userspace program and cannot simply reuse firmware-specific AWTK windows or internal `games.c` hooks. Any future migration of the **old four built-in games** would be an additional port rather than a straight file copy. This is a native collection of eight games, not an app-store service or a dynamic downloader for arbitrary third-party game code.
