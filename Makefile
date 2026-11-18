@@ -6,13 +6,13 @@ Q2_CFLAGS ?= -Oz -Wall -Wextra -Werror
 Q2_FLAGS = --target=mipsel-linux-gnu -march=mips32r2 -mabi=32 -mfp64 -mnan=2008 -mabs=2008 \
 	-mno-abicalls -fno-pic -G0 -ffreestanding -fno-builtin -fno-stack-protector \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables
-SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c
+SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c
 OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o)
 CARD = dist/.arcade
 
 all: dist/q2-arcade.zip
 
-build/q2/%.o: %.c src/app.h src/font.h core/arcade_core.h core/breakout_core.h core/game_framework.h
+build/q2/%.o: %.c src/app.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h
 	mkdir -p $(@D)
 	$(Q2_CC) $(Q2_FLAGS) $(Q2_CFLAGS) -std=c11 -Isrc -Icore -c $< -o $@
 
@@ -33,11 +33,11 @@ dist/q2-arcade.zip: $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.txt
 
 build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/app.h src/theme.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c
 
 build/menu-theme-test: tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c src/app.h src/theme.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c
 
 build/theme-test: tests/theme_test.c src/theme.c src/theme.h
 	mkdir -p $(@D)
@@ -56,7 +56,12 @@ build/game-framework-test: tests/game_framework_test.c core/game_framework.c cor
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -o $@ core/game_framework.c tests/game_framework_test.c
 
-check: build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+build/mini-game-test: tests/mini_game_test.c core/mini_games.c core/mini_games.h
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -o $@ core/mini_games.c tests/mini_game_test.c
+
+check: build/mini-game-test build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+	./build/mini-game-test
 	./build/app-test
 	./build/theme-test
 	./build/menu-theme-test
