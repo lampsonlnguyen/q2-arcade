@@ -15,14 +15,22 @@ static void connect(void){
     assert(mini_select(&g)&&g.board[5][3]==1);
     unsigned count=0;for(int y=0;y<6;y++)for(int x=0;x<7;x++)count+=g.board[y][x]==2;
     assert(count==1);
+    /* Discs are circular at render time; the game still stacks to bottom. */
+    assert(g.board[5][3]==1);
 }
 static void battle(void){
     Q2Mini g;mini_init(&g,MINI_BATTLE,42);
-    assert(g.target==8&&g.lives==18);
+    assert(g.target==8&&g.lives==26);
     int count=0;for(int y=0;y<6;y++)for(int x=0;x<6;x++)count+=g.ships[y][x];
     assert(count==8);
     assert(mini_select(&g));assert(g.moves==1);
     assert(!mini_select(&g));assert(g.moves==1);
+    /* Every ship has an ID, and an eventual sink can be identified. */
+    for(int id=1;id<=4;id++){
+        int found=0;
+        for(int y=0;y<6;y++)for(int x=0;x<6;x++)if(g.ship_id[y][x]==id)found++;
+        assert(found==g.ship_length[id-1]);
+    }
 }
 static void lcd(void){
     for(int kind=MINI_ROAD;kind<=MINI_CATCH;kind++){
