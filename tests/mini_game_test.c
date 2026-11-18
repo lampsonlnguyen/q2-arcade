@@ -32,6 +32,39 @@ static void battle(void){
         assert(found==g.ship_length[id-1]);
     }
 }
+static void tactical_ai(void){
+    /* Tic-Tac-Toe CPU chooses a forced win, not a random corner. */
+    Q2Mini g;mini_init(&g,MINI_TTT,4);
+    g.board[0][0]=2;g.board[0][1]=2;
+    g.board[1][0]=1;g.board[1][1]=1;
+    g.moves=4;g.cursor=8;
+    assert(mini_select(&g));
+    assert(g.board[0][2]==2&&g.outcome==2&&g.finished);
+    /* Connect Four CPU completes an immediate horizontal four. */
+    mini_init(&g,MINI_CONNECT,4);
+    for(int c=0;c<3;c++)g.board[5][c]=2;
+    g.moves=3;g.cursor=6;
+    assert(mini_select(&g));
+    assert(g.board[5][3]==2&&g.outcome==2&&g.finished);
+    /* When player threatens four, CPU must block the next square. */
+    mini_init(&g,MINI_CONNECT,4);
+    for(int c=0;c<3;c++)g.board[5][c]=1;
+    g.moves=3;g.cursor=6;
+    assert(mini_select(&g));
+    assert(g.board[5][3]==2&&!g.finished);
+}
+static void sinking(void){
+    Q2Mini g;mini_init(&g,MINI_BATTLE,42);
+    /* All segments of one small ship must raise a SUNK event. */
+    int last=-1;
+    for(int y=0;y<6;y++)for(int x=0;x<6;x++)
+        if(g.ship_id[y][x]==4)last=y*6+x;
+    assert(last>=0);
+    g.cursor=last;
+    assert(mini_select(&g));
+    assert(g.last_result==3&&g.ship_hits[3]==1);
+    assert(!mini_select(&g)); /* duplicate shots cannot consume ammo */
+}
 static void lcd(void){
     for(int kind=MINI_ROAD;kind<=MINI_CATCH;kind++){
         Q2Mini g;mini_init(&g,kind,53);
@@ -41,7 +74,7 @@ static void lcd(void){
     }
 }
 int main(void){
-    tic();connect();battle();lcd();
+    tic();connect();battle();tactical_ai();sinking();lcd();
     puts("Handheld mini-game tests passed");
     return 0;
 }
