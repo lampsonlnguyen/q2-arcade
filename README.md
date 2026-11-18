@@ -2,7 +2,7 @@
 
 Q2 Arcade brings **Pong**, **Blocks (Tetris-style)**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Catch** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
 
-The gameplay cores and the portable framework are migrated from [`q2-pod/new-builtin-games`](https://github.com/lampsonlnguyen/q2-pod/tree/new-builtin-games). Unlike the original firmware version, these games are self-contained in one MIPS card executable with a launcher, Q2 framebuffer renderer and input-socket client.
+The original Pong/Blocks/Breakout gameplay cores and the portable framework are migrated from [`q2-pod/new-builtin-games`](https://github.com/lampsonlnguyen/q2-pod/tree/new-builtin-games). Unlike the original firmware version, these games are self-contained in one MIPS card executable with a launcher, Q2 framebuffer renderer and input-socket client.
 
 ## Install
 
@@ -34,9 +34,9 @@ with the list scrolling automatically. Touch selection is also supported.
 | Breakout | Wheel or Left/Right moves paddle, Centre launches | Break all bricks |
 | Tic-Tac-Toe | Wheel selects a square, Centre marks X, or tap a square | Beat the CPU |
 | Connect Four | Wheel selects a column, Centre drops a disc, or tap a column | Align four against CPU |
-| Battleship | Wheel selects a cell, Centre fires, or tap a cell | Find all eight hidden ship segments in 18 shots |
-| Road Dodge | Wheel, Left/Right, or tap to change lanes | Avoid oncoming blocks |
-| Catch | Wheel, Left/Right, or tap to change lanes | Catch falling blocks |
+| Battleship | Wheel selects a cell, Centre fires, or tap a cell | Sink four hidden ships (eight segments) in 26 shots |
+| Road Dodge | Wheel, Left/Right, or tap to change lanes | Steer your car around oncoming traffic |
+| Catch | Wheel, Left/Right, or tap to change lanes | Catch falling apples in a basket, avoid misses |
 
 Press Return/Back while playing to open the common pause menu. The games
 use compact, original C graphics and game rules; no proprietary handheld
@@ -86,9 +86,9 @@ The distributable file is **`dist/q2-arcade.zip`**. There is no requirement for 
 - `src/platform_q2.c` — MIPS Linux framebuffer, input datagram socket, timekeeping and SD-card persistence.
 - `tests/` — portable rules, framework and application-input regression tests.
 
-The framework module is included for continued development, but the existing games currently use the existing portable rules with a shared card-level adapter; they have not yet been migrated to the framework callback runner.
+The framework module is included for continued development, but the current games use portable rules with a shared card-level adapter; they have not yet been migrated to the framework callback runner.
 
-For migration notes, implementation boundaries and contributor guidance, see [docs/architecture.md](docs/architecture.md).
+For migration notes, implementation boundaries and contributor guidance, see [docs/architecture.md](docs/architecture.md). For the open-source algorithm references and new rendering details, see [docs/mini-games.md](docs/mini-games.md).
 
 ## Credits and license
 
