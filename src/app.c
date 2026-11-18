@@ -24,6 +24,7 @@ static void start(ArcadeApp *a, int game) {
     if (game == ARCADE_PONG) q2_pong_init(&a->pong);
     else if (game == ARCADE_BLOCKS) q2_blocks_init(&a->blocks, next_seed(a));
     else if (game == ARCADE_BREAKOUT) q2_breakout_init(&a->breakout);
+    else mini_init(&a->mini, game - ARCADE_TTT, next_seed(a));
 }
 static void save_best(ArcadeApp *a) {
     if (a->game == ARCADE_BLOCKS && a->blocks.score > a->best_blocks) {
@@ -35,7 +36,8 @@ static void save_best(ArcadeApp *a) {
 }
 static void finish(ArcadeApp *a) {
     if ((a->game == ARCADE_BLOCKS && a->blocks.game_over) ||
-        (a->game == ARCADE_BREAKOUT && a->breakout.game_over)) {
+        (a->game == ARCADE_BREAKOUT && a->breakout.game_over) ||
+        (a->game >= ARCADE_TTT && a->mini.finished)) {
         save_best(a);
         a->view = VIEW_OVER;
         a->option = 0;
@@ -57,11 +59,14 @@ static int select_option(ArcadeApp *a) {
         finish(a);
     } else if (a->game == ARCADE_BREAKOUT) {
         q2_breakout_launch(&a->breakout);
+    } else if (a->game >= ARCADE_TTT) {
+        (void)mini_select(&a->mini);
+        finish(a);
     }
     return 1;
 }
 static int shift_option(ArcadeApp *a, int direction) {
-    int count = a->view == VIEW_SELECT ? 3 : a->view == VIEW_PAUSE ? 4 : 2;
+    int count = a->view == VIEW_SELECT ? ARCADE_GAME_COUNT - ARCADE_PONG : a->view == VIEW_PAUSE ? 4 : 2;
     int *choice = a->view == VIEW_SELECT ? &a->selection : &a->option;
     *choice = (*choice + (direction > 0 ? 1 : count - 1)) % count;
     return 1;
@@ -89,6 +94,10 @@ static int wheel(ArcadeApp *a, int movement) {
              * possibly opposite, turn. */
             a->wheel_remainder = 0;
         }
+        return steps != 0;
+    }
+    if (a->view == VIEW_PLAY && a->game >= ARCADE_TTT) {
+        if(steps) (void)mini_move(&a->mini, steps);
         return steps != 0;
     }
     if (steps > 8) steps = 8;
@@ -126,6 +135,11 @@ static int key(ArcadeApp *a, int button) {
         if (button == KEY_LEFT) { q2_pong_move(&a->pong, -14); return 1; }
         if (button == KEY_RIGHT) { q2_pong_move(&a->pong, 14); return 1; }
         if (button == KEY_PLAY) { a->view = VIEW_PAUSE; a->option = 0; return 1; }
+    } else if (a->game >= ARCADE_TTT) {
+        if(button == KEY_LEFT || button == KEY_PREV)return mini_move(&a->mini,-1);
+        if(button == KEY_RIGHT || button == KEY_NEXT)return mini_move(&a->mini,1);
+        if(button == KEY_PLAY && a->game == ARCADE_BATTLE)return mini_move(&a->mini,6);
+        return 0;
     } else if (a->game == ARCADE_BREAKOUT) {
         if (button == KEY_LEFT) { q2_breakout_move(&a->breakout, -14); return 1; }
         if (button == KEY_RIGHT) { q2_breakout_move(&a->breakout, 14); return 1; }
@@ -163,9 +177,11 @@ int app_input(ArcadeApp *a, const char *message) {
     if (message[0] == 't' && message[2] == 'u') {
         int y = number(&p);
         if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return 0;
-        if (a->view == VIEW_SELECT && y >= MENU_TOP && y < MENU_TOP + 3 * MENU_PITCH) {
-            a->selection = (y - MENU_TOP) / MENU_PITCH;
-            if (a->selection > 2) a->selection = 2;
+        if (a->view == VIEW_SELECT && y >= MENU_TOP && y < MENU_TOP + 4 * MENU_PITCH) {
+            int first=a->selection>=4?a->selection-3:0;
+            a->selection = first + (y - MENU_TOP) / MENU_PITCH;
+            if(a->selection>=ARCADE_GAME_COUNT-ARCADE_PONG)
+                a->selection=ARCADE_GAME_COUNT-ARCADE_PONG-1;
             return select_option(a);
         }
         if (a->view != VIEW_PLAY && y >= 105 && y < 284) {
@@ -175,6 +191,17 @@ int app_input(ArcadeApp *a, const char *message) {
         }
         if (a->view == VIEW_PLAY) {
             if (y < 48) return key(a, KEY_RETURN);
+            if (a->game >= ARCADE_TTT) {
+                if(a->game==ARCADE_TTT && x>=70 && x<310 && y>=70 && y<286)
+                    a->mini.cursor=((y-70)/72)*3+(x-70)/80;
+                else if(a->game==ARCADE_CONNECT && x>=40 && x<334 && y>=70 && y<280)
+                    a->mini.cursor=(x-40)/42;
+                else if(a->game==ARCADE_BATTLE && x>=56 && x<320 && y>=69 && y<285)
+                    a->mini.cursor=((y-69)/36)*6+(x-56)/44;
+                else if(a->game>=ARCADE_ROAD && x>=80 && x<296)
+                    a->mini.lane=(x-80)/72;
+                (void)mini_select(&a->mini);finish(a);return 1;
+            }
             if (a->game == ARCADE_BLOCKS) {
                 if (x < 125) return key(a, KEY_LEFT);
                 if (x > 235) return key(a, KEY_RIGHT);
@@ -190,7 +217,9 @@ int app_input(ArcadeApp *a, const char *message) {
     }
     return 0;
 }
-int app_animated(const ArcadeApp *a) { return a->view == VIEW_PLAY; }
+int app_animated(const ArcadeApp *a) {
+    return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game >= ARCADE_ROAD);
+}
 int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
     if (!app_animated(a)) return 0;
     if (elapsed_ms > 100) elapsed_ms = 100;
@@ -201,6 +230,9 @@ int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
             if (a->game == ARCADE_PONG) q2_pong_tick(&a->pong);
             else q2_breakout_tick(&a->breakout);
         }
+    } else if (a->game >= ARCADE_ROAD) {
+        a->accumulator += elapsed_ms;
+        if(a->accumulator >= 180u){a->accumulator%=180u;(void)mini_tick(&a->mini);}
     } else if (a->game == ARCADE_BLOCKS) {
         unsigned steps = a->blocks.level < 13 ? a->blocks.level - 1 : 12;
         unsigned delay = 650u - steps * 45u;
