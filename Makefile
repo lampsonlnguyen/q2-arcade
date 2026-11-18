@@ -58,7 +58,7 @@ build/game-framework-test: tests/game_framework_test.c core/game_framework.c cor
 
 build/mini-game-test: tests/mini_game_test.c core/mini_games.c core/mini_games.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -o $@ core/mini_games.c tests/mini_game_test.c
+	$(CC) $(CFLAGS) -std=c11 -Icore -o $@ core/mini_games.c tests/mini_game_test.c
 
 check: build/mini-game-test build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
 	./build/mini-game-test
