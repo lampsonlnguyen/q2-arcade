@@ -11,6 +11,46 @@ static uint32_t pixel(unsigned x, unsigned y) {
     assert(x < SCREEN_W && y < SCREEN_H);
     return frame[x*SCREEN_H + SCREEN_H - 1 - y] & 0xffffffu;
 }
+/* Regression tests: the new games use identifiable original artwork
+ * rather than generic monochrome rectangles. */
+static int count_color(uint32_t color) {
+    int n=0;
+    for(int i=0;i<SCREEN_W*SCREEN_H;i++)
+        n+=(frame[i]&0xffffffu)==color;
+    return n;
+}
+static void game_art(void) {
+    ArcadeApp app;
+    app_init(&app,88,0,0);
+    app.view=VIEW_PLAY;
+    app.game=ARCADE_TTT;
+    mini_init(&app.mini,MINI_TTT,12);
+    app.mini.cursor=0;
+    (void)mini_select(&app.mini);
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0x72dbf7)>40); /* blue X */
+    assert(count_color(0xffcc66)>40); /* gold O ring */
+    app.game=ARCADE_CONNECT;
+    mini_init(&app.mini,MINI_CONNECT,12);
+    (void)mini_select(&app.mini);
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0xe83d42)>40); /* red discs */
+    assert(count_color(0xffd847)>40); /* yellow discs */
+    app.game=ARCADE_BATTLE;
+    mini_init(&app.mini,MINI_BATTLE,12);
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0x075070)>10); /* sea */
+    assert(count_color(0x9ebbc4)>10); /* ship */
+    app.game=ARCADE_ROAD;
+    mini_init(&app.mini,MINI_ROAD,12);
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0x23b9d5)>50); /* vehicle body */
+    app.game=ARCADE_CATCH;
+    mini_init(&app.mini,MINI_CATCH,12);
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0xcb8545)>25); /* basket */
+    assert(count_color(0xd83434)>25); /* tree apples */
+}
 int main(void) {
     ArcadeApp app;
     app_init(&app, 42, 0, 0);
@@ -37,6 +77,7 @@ int main(void) {
     app.theme.accent=1;
     app_render(&app,frame,SCREEN_H);
     assert(pixel(145,90) != minimal);
+    game_art();
     puts("menu_theme: all tests passed");
     return 0;
 }
