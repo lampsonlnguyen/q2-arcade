@@ -178,7 +178,8 @@ static u32 blend(u32 a, u32 b, unsigned n, unsigned total) {
     return r << 16 | g << 8 | bl;
 }
 static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
-    static const char*const names[]={"PONG","BLOCKS","BREAKOUT"};
+    static const char*const names[]={"PONG","BLOCKS","BREAKOUT",
+        "TIC TAC TOE","CONNECT FOUR","BATTLESHIP","ROAD DODGE","CATCH"};
     u32 accent=arcade_theme_accent(theme);
     int classic=theme->style==ARCADE_CLASSIC;
     int modern=theme->style==ARCADE_MODERN;
@@ -189,8 +190,11 @@ static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
     fill(d,stride,0,0,SCREEN_W,SCREEN_H,paper);
 
     line_heading(d,stride,"Q2 ARCADE");
-    for(int i=0;i<3;++i) {
-        int y=MENU_TOP+i*MENU_PITCH;
+    int first=selection>=4?selection-3:0;
+    for(int row=0;row<4;++row) {
+        int i=first+row;
+        if(i>=ARCADE_GAME_COUNT-ARCADE_PONG)break;
+        int y=MENU_TOP+row*MENU_PITCH;
         int selected=(i==selection);
         if(classic) {
             /* 49px menu hitbox, iPod-style glossy blue/accent highlight.
@@ -285,12 +289,67 @@ static void breakout(u32*d,unsigned s,const ArcadeApp*a) {
     if(b->waiting)centered(d,s,215,"CENTER TO LAUNCH",GOLD,1);
     footer(d,s,"WHEEL MOVE  RETURN PAUSE");
 }
+static void mini_grid(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Mini*g=&a->mini;
+    const char *title=a->game==ARCADE_TTT?"TIC TAC TOE":
+                      a->game==ARCADE_CONNECT?"CONNECT FOUR":"BATTLESHIP";
+    line_heading(d,s,title);
+    int cols=a->game==ARCADE_TTT?3:a->game==ARCADE_CONNECT?7:6;
+    int rows=a->game==ARCADE_TTT?3:6;
+    int x0=a->game==ARCADE_TTT?70:a->game==ARCADE_CONNECT?40:56;
+    int y0=a->game==ARCADE_TTT?70:a->game==ARCADE_CONNECT?70:69;
+    int cw=a->game==ARCADE_TTT?80:a->game==ARCADE_CONNECT?42:44;
+    int ch=a->game==ARCADE_TTT?72:a->game==ARCADE_CONNECT?35:36;
+    fill(d,s,x0-4,y0-4,cols*cw+8,rows*ch+8,OUTLINE);
+    for(int y=0;y<rows;y++)for(int x=0;x<cols;x++){
+        int chosen=(a->game==ARCADE_CONNECT?g->cursor==x:g->cursor==y*cols+x);
+        int mark=g->board[y][x];
+        u32 base=chosen?0x4c5e73:0x252e3c;
+        fill(d,s,x0+x*cw+2,y0+y*ch+2,cw-4,ch-4,base);
+        if(mark==1){
+            if(a->game==ARCADE_TTT)text(d,s,x0+x*cw+cw/2-8,y0+y*ch+ch/2-9,"X",CYAN,3);
+            else if(a->game==ARCADE_CONNECT)fill(d,s,x0+x*cw+9,y0+y*ch+7,cw-18,ch-14,CYAN);
+            else text(d,s,x0+x*cw+cw/2-7,y0+y*ch+ch/2-8,"X",CYAN,3);
+        }else if(mark==2){
+            if(a->game==ARCADE_TTT)text(d,s,x0+x*cw+cw/2-8,y0+y*ch+ch/2-9,"O",GOLD,3);
+            else fill(d,s,x0+x*cw+9,y0+y*ch+7,cw-18,ch-14,GOLD);
+        }else if(mark==3)centered(d,s,y0+y*ch+ch/2-7,"",DIM,1);
+        if(mark==3)fill(d,s,x0+x*cw+cw/2-2,y0+y*ch+ch/2-2,5,5,DIM);
+        if(chosen)border(d,s,x0+x*cw,y0+y*ch,cw,ch,WHITE);
+    }
+    if(a->game==ARCADE_BATTLE){
+        text(d,s,42,50,"HITS",DIM,1);number(d,s,83,50,g->score,WHITE,1);
+        text(d,s,194,50,"SHOTS",DIM,1);number(d,s,245,50,18-g->moves,WHITE,1);
+    }
+    footer(d,s,a->game==ARCADE_TTT?"WHEEL CELL CENTER MARK":
+               a->game==ARCADE_CONNECT?"WHEEL COLUMN CENTER DROP":"WHEEL CELL CENTER FIRE");
+}
+static void mini_lcd(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Mini*g=&a->mini;
+    line_heading(d,s,a->game==ARCADE_ROAD?"ROAD DODGE":"CATCH");
+    text(d,s,44,55,"SCORE",DIM,1);number(d,s,93,55,g->score,WHITE,1);
+    text(d,s,236,55,"LIVES",DIM,1);number(d,s,286,55,g->lives,WHITE,1);
+    fill(d,s,77,74,221,213,BLACK);
+    border(d,s,77,74,221,213,OUTLINE);
+    for(int lane=1;lane<3;lane++)
+        for(int y=85;y<275;y+=24)fill(d,s,77+lane*73,y,2,13,OUTLINE);
+    int ox=94+g->obstacle*73;
+    int oy=78+g->obstacle_y*25;
+    if(g->obstacle_y>=0 && oy<265)
+        fill(d,s,ox,oy,a->game==ARCADE_ROAD?35:19,12,
+             a->game==ARCADE_ROAD?GOLD:CYAN);
+    fill(d,s,94+g->lane*73,257,35,20,a->game==ARCADE_ROAD?CYAN:GOLD);
+    footer(d,s,"WHEEL OR LEFT RIGHT MOVE");
+}
+
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     fill(d,s,0,0,SCREEN_W,SCREEN_H,BG);
     if(a->view==VIEW_SELECT){menu(d,s,a->selection,&a->theme);return;}
     if(a->game==ARCADE_PONG)pong(d,s,a);
     else if(a->game==ARCADE_BLOCKS)blocks(d,s,a);
     else if(a->game==ARCADE_BREAKOUT)breakout(d,s,a);
+    else if(a->game<=ARCADE_BATTLE)mini_grid(d,s,a);
+    else mini_lcd(d,s,a);
     if(a->view==VIEW_PAUSE) {
         static const char* names[]={"RESUME","RESTART","GAMES","EXIT"};
         options(d,s,"PAUSED",names,4,a->option);
