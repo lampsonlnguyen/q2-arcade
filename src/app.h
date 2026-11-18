@@ -4,17 +4,20 @@
 #include <stdint.h>
 #include "arcade_core.h"
 #include "breakout_core.h"
+#include "mini_games.h"
 #include "game_framework.h"
 #include "theme.h"
 enum { SCREEN_W = 375, SCREEN_H = 320 };
 enum { MENU_TOP = 64, MENU_PITCH = 38, MENU_ROW_H = 34 };
-enum { ARCADE_MENU, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT };
+enum { ARCADE_MENU, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT,
+       ARCADE_TTT, ARCADE_CONNECT, ARCADE_BATTLE, ARCADE_ROAD, ARCADE_CATCH, ARCADE_GAME_COUNT };
 enum { VIEW_SELECT, VIEW_PLAY, VIEW_PAUSE, VIEW_OVER };
 typedef uint32_t u32;
 typedef struct {
     Q2Pong pong;
     Q2Blocks blocks;
     Q2Breakout breakout;
+    Q2Mini mini;
     ArcadeTheme theme;
     unsigned best_blocks, best_breakout, seed, accumulator;
     int game, view, selection, option, wheel_remainder, dirty, quit;
