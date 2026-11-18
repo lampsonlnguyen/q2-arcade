@@ -1,6 +1,6 @@
 # Q2 Arcade — downloadable game collection for Shanling Q2
 
-Q2 Arcade brings **Pong**, **Blocks (Tetris-style)** and **Breakout** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
+Q2 Arcade brings **Pong**, **Blocks (Tetris-style)**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Catch** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
 
 The gameplay cores and the portable framework are migrated from [`q2-pod/new-builtin-games`](https://github.com/lampsonlnguyen/q2-pod/tree/new-builtin-games). Unlike the original firmware version, these games are self-contained in one MIPS card executable with a launcher, Q2 framebuffer renderer and input-socket client.
 
@@ -23,13 +23,24 @@ If you installed an older build, rename the SD-card folder `.q2-arcade` to `.arc
 
 ### Controls
 
-| Q2 control | Arcade menu | Pong | Blocks | Breakout |
-| --- | --- | --- | --- | --- |
-| Click wheel | Select game | Move paddle | Rotate left/right | Move paddle |
-| Left / right physical buttons | Change selection | Nudge paddle | Move piece horizontally | Nudge paddle |
-| Down / Play-Pause button | — | Pause | Soft drop (up to three rows) | Pause |
-| Centre | Launch game | — | Hard drop | Launch ball |
-| Return / Back | Exit app | Pause / quit menu | Pause / quit menu | Pause / quit menu |
+The launcher now contains eight games. Turn the wheel to scroll the list and
+press Centre to open the highlighted game. Four entries are visible at once,
+with the list scrolling automatically. Touch selection is also supported.
+
+| Game | Controls | Goal |
+| --- | --- | --- |
+| Pong | Wheel or Left/Right moves paddle | Outscore the CPU |
+| Blocks | Wheel rotates, Left/Right moves, Play soft-drops, Centre hard-drops | Clear rows |
+| Breakout | Wheel or Left/Right moves paddle, Centre launches | Break all bricks |
+| Tic-Tac-Toe | Wheel selects a square, Centre marks X, or tap a square | Beat the CPU |
+| Connect Four | Wheel selects a column, Centre drops a disc, or tap a column | Align four against CPU |
+| Battleship | Wheel selects a cell, Centre fires, or tap a cell | Find all eight hidden ship segments in 18 shots |
+| Road Dodge | Wheel, Left/Right, or tap to change lanes | Avoid oncoming blocks |
+| Catch | Wheel, Left/Right, or tap to change lanes | Catch falling blocks |
+
+Press Return/Back while playing to open the common pause menu. The games
+use compact, original C graphics and game rules; no proprietary handheld
+LCD game ROMs or artwork are included.
 
 Within the pause menu, use the wheel or physical Left/Right buttons to select **Resume**, **Restart**, **Games**, or **Exit**, then press Centre. Return from the pause menu goes back to the arcade's game list. Touch taps on the game picker are supported.
 
@@ -68,13 +79,14 @@ The distributable file is **`dist/q2-arcade.zip`**. There is no requirement for 
 
 - `core/arcade_core.c/.h` — portable Pong and Blocks logic.
 - `core/breakout_core.c/.h` — portable Breakout logic.
+- `core/mini_games.c/.h` — Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Catch rules.
 - `core/game_framework.c/.h` — shared lifecycle, input, update callback infrastructure.
 - `src/app.c/.h` — arcade launcher and input/update adapters.
 - `src/render.c` — lightweight frame drawing without AWTK dependencies.
 - `src/platform_q2.c` — MIPS Linux framebuffer, input datagram socket, timekeeping and SD-card persistence.
 - `tests/` — portable rules, framework and application-input regression tests.
 
-The framework module is included for continued development, but the three games currently use the existing portable rules with a shared card-level adapter; they have not yet been migrated to the framework callback runner.
+The framework module is included for continued development, but the existing games currently use the existing portable rules with a shared card-level adapter; they have not yet been migrated to the framework callback runner.
 
 For migration notes, implementation boundaries and contributor guidance, see [docs/architecture.md](docs/architecture.md).
 
