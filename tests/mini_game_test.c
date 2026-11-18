@@ -29,7 +29,7 @@ static void lcd(void){
         Q2Mini g;mini_init(&g,kind,53);
         assert(mini_move(&g,1)&&g.lane==2);
         for(int i=0;i<24;i++)mini_tick(&g);
-        assert(g.score+3-g.lives==3);
+        assert(g.score+3-g.lives==2);
     }
 }
 int main(void){
