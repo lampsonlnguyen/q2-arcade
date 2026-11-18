@@ -313,7 +313,7 @@ static void mini_grid(u32*d,unsigned s,const ArcadeApp*a){
         }else if(mark==2){
             if(a->game==ARCADE_TTT)text(d,s,x0+x*cw+cw/2-8,y0+y*ch+ch/2-9,"O",GOLD,3);
             else fill(d,s,x0+x*cw+9,y0+y*ch+7,cw-18,ch-14,GOLD);
-        }else if(mark==3)centered(d,s,y0+y*ch+ch/2-7,"",DIM,1);
+        }
         if(mark==3)fill(d,s,x0+x*cw+cw/2-2,y0+y*ch+ch/2-2,5,5,DIM);
         if(chosen)border(d,s,x0+x*cw,y0+y*ch,cw,ch,WHITE);
     }
