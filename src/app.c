@@ -163,6 +163,7 @@ static int key(ArcadeApp *a, int button) {
         if(button == KEY_RIGHT || button == KEY_NEXT)return mini_move(&a->mini,1);
         if(button == KEY_PLAY && a->game == ARCADE_TTT)return mini_move(&a->mini,a->mini.ttt_size);
         if(button == KEY_PLAY && a->game == ARCADE_BATTLE)return mini_move(&a->mini,6);
+        if(button == KEY_PLAY && a->game == ARCADE_MINES)return mini_flag(&a->mini);
         return 0;
     } else if (a->game == ARCADE_BREAKOUT) {
         if (button == KEY_LEFT) { q2_breakout_move(&a->breakout, -14); return 1; }
@@ -232,6 +233,10 @@ int app_input(ArcadeApp *a, const char *message) {
                 } else if(a->game==ARCADE_BATTLE) {
                     if(x<56||x>=320||y<69||y>=285)return 0;
                     a->mini.cursor=((y-69)/36)*6+(x-56)/44;
+                } else if(a->game==ARCADE_MINES) {
+                    if(x<MS_BOARD_X||x>=MS_BOARD_X+MINI_MS_COLS*MS_CELL||
+                       y<MS_BOARD_Y||y>=MS_BOARD_Y+MINI_MS_ROWS*MS_CELL)return 0;
+                    a->mini.cursor=((y-MS_BOARD_Y)/MS_CELL)*MINI_MS_COLS+(x-MS_BOARD_X)/MS_CELL;
                 } else {
                     if(x<80||x>=293||y<70||y>=288)return 0;
                     a->mini.lane=(x-80)/71;
@@ -257,7 +262,7 @@ int app_input(ArcadeApp *a, const char *message) {
     return 0;
 }
 int app_animated(const ArcadeApp *a) {
-    return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game >= ARCADE_ROAD || a->ttt_ai_remaining);
+    return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game == ARCADE_ROAD || a->game == ARCADE_MINES || a->ttt_ai_remaining);
 }
 int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
     if (!app_animated(a)) return 0;
@@ -272,9 +277,13 @@ int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
             if (a->game == ARCADE_PONG) q2_pong_tick(&a->pong);
             else q2_breakout_tick(&a->breakout);
         }
-    } else if (a->game >= ARCADE_ROAD) {
+    } else if (a->game == ARCADE_ROAD) {
         a->accumulator += elapsed_ms;
         if(a->accumulator >= 180u){a->accumulator%=180u;(void)mini_tick(&a->mini);}
+    } else if (a->game == ARCADE_MINES) {
+        /* One-second timer ticks; the core only counts while play runs. */
+        a->accumulator += elapsed_ms;
+        if(a->accumulator >= 1000u){a->accumulator%=1000u;(void)mini_tick(&a->mini);}
     } else if (a->game == ARCADE_BLOCKS) {
         unsigned steps = a->blocks.level < 13 ? a->blocks.level - 1 : 12;
         unsigned delay = 650u - steps * 45u;

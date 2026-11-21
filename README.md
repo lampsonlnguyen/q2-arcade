@@ -1,6 +1,6 @@
 # Q2 Arcade — downloadable game collection for Shanling Q2
 
-Q2 Arcade brings **Pong**, **Blocks (Tetris-style)**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Catch** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
+Q2 Arcade brings **Pong**, **Blocks (Tetris-style)**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Minesweeper** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
 
 The original Pong/Blocks/Breakout gameplay cores and the portable framework are migrated from [`q2-pod/new-builtin-games`](https://github.com/lampsonlnguyen/q2-pod/tree/new-builtin-games). Unlike the original firmware version, these games are self-contained in one MIPS card executable with a launcher, Q2 framebuffer renderer and input-socket client.
 
@@ -36,7 +36,7 @@ with the list scrolling automatically. Touch selection is also supported.
 | Connect Four | Wheel selects a column, Centre drops a disc, or tap a column | Align four against CPU |
 | Battleship | Wheel selects a cell, Centre fires, or tap a cell | Sink four hidden ships (eight segments) in 26 shots |
 | Road Dodge | Wheel, Left/Right, or tap to change lanes | Steer your car around oncoming traffic |
-| Catch | Wheel, Left/Right, or tap to change lanes | Catch falling apples in a basket, avoid misses |
+| Minesweeper | Wheel, Left/Right, or tap to move the cursor; Centre reveals a cell, Play flags it | Clear the 9×9 board (10 mines) without hitting a mine |
 
 Press Return/Back while playing to open the common pause menu. The games
 use compact, original C graphics and game rules; no proprietary handheld
@@ -79,7 +79,7 @@ The distributable file is **`dist/q2-arcade.zip`**. There is no requirement for 
 
 - `core/arcade_core.c/.h` — portable Pong and Blocks logic.
 - `core/breakout_core.c/.h` — portable Breakout logic.
-- `core/mini_games.c/.h` — Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Catch rules.
+- `core/mini_games.c/.h` — Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Minesweeper rules.
 - `core/game_framework.c/.h` — shared lifecycle, input, update callback infrastructure.
 - `src/app.c/.h` — arcade launcher and input/update adapters.
 - `src/render.c` — lightweight frame drawing without AWTK dependencies.

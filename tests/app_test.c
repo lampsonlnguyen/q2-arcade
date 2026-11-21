@@ -65,7 +65,7 @@ static void test_breakout(void) {
 }
 static void test_handheld(void) {
     static const int kinds[] = {ARCADE_TTT, ARCADE_CONNECT, ARCADE_BATTLE,
-                                ARCADE_ROAD, ARCADE_CATCH};
+                                ARCADE_ROAD, ARCADE_MINES};
     for(unsigned i=0;i<sizeof kinds/sizeof kinds[0];i++) {
         ArcadeApp a;
         app_init(&a,31,0,0);

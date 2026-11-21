@@ -46,11 +46,16 @@ static void game_art(void) {
     mini_init(&app.mini,MINI_ROAD,12);
     app_render(&app,frame,SCREEN_H);
     assert(count_color(0x23b9d5)>50); /* vehicle body */
-    app.game=ARCADE_CATCH;
-    mini_init(&app.mini,MINI_CATCH,12);
+    app.game=ARCADE_MINES;
+    mini_init(&app.mini,MINI_MINES,12);
     app_render(&app,frame,SCREEN_H);
-    assert(count_color(0xcb8545)>25); /* basket */
-    assert(count_color(0xd83434)>25); /* tree apples */
+    assert(count_color(0x191919)>10000); /* unrevealed cells */
+    app.mini.flagged[0][0]=1;
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0xe83d42)>25); /* flag */
+    (void)mini_select(&app.mini);
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0x11161c)>100); /* uncovered cells */
 }
 int main(void) {
     ArcadeApp app;

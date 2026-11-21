@@ -1,7 +1,7 @@
 # Q2 Arcade handheld games: rules and graphics
 
 This release replaces the first-pass generic grid/rectangle implementations of
-Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Catch.
+Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Minesweeper.
 
 ## Open-source code studied
 
@@ -26,6 +26,14 @@ network functions, UI libraries or large source trees.
   single-player search challenge with 4 ships of lengths 3, 2, 2, and 1.
   Every hidden ship has its own hit counter, so a player can be told when a
   particular ship sinks. The player gets 26 shots.
+- **Minesweeper:** [Rockbox `apps/plugins/minesweeper.c`](https://github.com/Rockbox/rockbox/blob/master/apps/plugins/minesweeper.c),
+  GPL-2.0-or-later, by Antoine Cellerier (2004-2006). Studied tile state
+  (mine / flag / known / neighbour count), placing mines away from the first
+  revealed cell so the opening move is always safe, flood-fill uncovering of
+  empty regions, and win/lose detection. Q2 uses a 9x9 beginner board with
+  10 mines, a mine counter, and a one-second timer that starts on the first
+  reveal. [tsoding/mine](https://github.com/tsoding/mine), MIT license, was a
+  secondary reference for the same rules in a minimal C implementation.
 
 The original implementation is licensed as GPL-3.0-or-later, see
 [LICENSE](../LICENSE). These references are credited for algorithms and
@@ -45,8 +53,10 @@ pixel primitives in `src/render.c`:
   end. The game displays hits, remaining torpedoes, and sink notifications.
 - Road Dodge: grass verges, asphalt, scrolling lane dividers, and recognizable
   top-down cars with tires, windshields, cabins and lights.
-- Apple Catch: sky, grass, a full green tree canopy, hanging apples, a falling
-  red apple and a woven brown basket.
+- Minesweeper: a 9x9 grid of raised cells on a dark board with a gold cursor,
+  classic coloured neighbour counts, red flags, and spiked mines revealed on
+  loss (the mine hit is highlighted red); the HUD shows mines remaining and
+  elapsed time.
 
 All touch targets follow these drawn bounds. Menu navigation and the existing
 Pong, Blocks, Breakout rules are unchanged.
