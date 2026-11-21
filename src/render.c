@@ -179,7 +179,7 @@ static u32 blend(u32 a, u32 b, unsigned n, unsigned total) {
 }
 static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
     static const char*const names[]={"PONG","BLOCKS","BREAKOUT",
-        "TIC TAC TOE","CONNECT FOUR","BATTLESHIP","ROAD DODGE","CATCH"};
+        "TIC TAC TOE","CONNECT FOUR","BATTLESHIP","ROAD DODGE","MINESWEEPER"};
     u32 accent=arcade_theme_accent(theme);
     int classic=theme->style==ARCADE_CLASSIC;
     int modern=theme->style==ARCADE_MODERN;
@@ -466,49 +466,54 @@ static void road_dodge(u32*d,unsigned s,const ArcadeApp*a){
     car(d,s,116+g->lane*71,232,0x23b9d5,0);
     footer(d,s,"WHEEL OR LEFT RIGHT STEER");
 }
-static void apple(u32*d,unsigned s,int cx,int cy){
-    disc(d,s,cx-5,cy,9,0xec3c3d);
-    disc(d,s,cx+5,cy,9,0xe93632);
-    disc(d,s,cx,cy+4,9,0xd92529);
-    disc(d,s,cx-5,cy-5,3,0xffa6a3);
-    fill(d,s,cx-1,cy-15,3,7,0x634328);
-    stroke(d,s,cx+2,cy-13,cx+9,cy-17,0x5cc16f,3);
+static void mine_icon(u32*d,unsigned s,int cx,int cy){
+    /* Spiked mine with a white glint, readable at one board cell. */
+    stroke(d,s,cx-7,cy,cx+7,cy,0x222222,2);
+    stroke(d,s,cx,cy-7,cx,cy+7,0x222222,2);
+    stroke(d,s,cx-5,cy-5,cx+5,cy+5,0x222222,2);
+    stroke(d,s,cx-5,cy+5,cx+5,cy-5,0x222222,2);
+    disc(d,s,cx,cy,6,0x222222);
+    disc(d,s,cx-2,cy-2,2,0xeeeeec);
 }
-static void basket(u32*d,unsigned s,int cx,int y){
-    fill(d,s,cx-31,y,62,7,0x9a5a2f);
-    fill(d,s,cx-27,y+7,54,18,0xcb8545);
-    fill(d,s,cx-23,y+24,46,5,0x8e562e);
-    for(int x=-23;x<=24;x+=10){
-        stroke(d,s,cx+x,y+9,cx+x+10,y+23,0x8f5129,2);
-    }
-    fill(d,s,cx-30,y+2,60,3,0xf3c078);
+static void flag_icon(u32*d,unsigned s,int x,int y){
+    fill(d,s,x+7,y+5,2,15,0x222222);
+    fill(d,s,x+9,y+5,9,5,0xe83d42);
+    fill(d,s,x+9,y+10,6,3,0xe83d42);
+    fill(d,s,x+5,y+20,7,2,0x222222);
 }
-static void catch_apples(u32*d,unsigned s,const ArcadeApp*a){
+static void minesweeper(u32*d,unsigned s,const ArcadeApp*a){
     const Q2Mini*g=&a->mini;
-    line_heading(d,s,"APPLE CATCH");
-    text(d,s,36,52,"APPLES",DIM,1);number(d,s,96,52,g->score,WHITE,1);
-    text(d,s,240,52,"MISSES",DIM,1);number(d,s,299,52,3-g->lives,WHITE,1);
-    fill(d,s,28,70,319,218,0xb4d8f0);
-    fill(d,s,28,251,319,37,0x71b45a);
-    fill(d,s,28,265,319,23,0x46844a);
-    /* Full tree canopy: trunk with branches, foliage and fixed apples. */
-    fill(d,s,179,76,18,81,0x795332);
-    stroke(d,s,187,107,142,76,0x795332,7);
-    stroke(d,s,187,108,232,78,0x795332,7);
-    disc(d,s,111,90,41,0x3e9658);
-    disc(d,s,161,79,50,0x50a35b);
-    disc(d,s,215,85,48,0x439b56);
-    disc(d,s,268,90,40,0x38914d);
-    disc(d,s,182,102,40,0x57af64);
-    disc(d,s,130,98,6,0xd83434);
-    disc(d,s,247,96,6,0xd83434);
-    disc(d,s,193,110,5,0xd83434);
-    if(g->obstacle_y>=0) {
-        int y=128+g->obstacle_y*15;
-        if(y<260)apple(d,s,116+g->obstacle*71,y);
+    static const u32 digits[9]={0,0x4a90d9,0x4bc785,0xe86666,
+        0x2a4a8a,0x8c2f2f,0x13838d,0,0x949294};
+    line_heading(d,s,"MINESWEEPER");
+    text(d,s,36,52,"MINES",DIM,1);
+    number(d,s,84,52,(unsigned)(g->mine_total-g->flags_placed),WHITE,1);
+    text(d,s,240,52,"TIME",DIM,1);
+    number(d,s,282,52,g->elapsed_s,WHITE,1);
+    fill(d,s,MS_BOARD_X-1,MS_BOARD_Y-1,
+         MINI_MS_COLS*MS_CELL+2,MINI_MS_ROWS*MS_CELL+2,OUTLINE);
+    for(int row=0;row<MINI_MS_ROWS;row++)for(int col=0;col<MINI_MS_COLS;col++){
+        int x=MS_BOARD_X+col*MS_CELL,y=MS_BOARD_Y+row*MS_CELL;
+        int mine=g->mines[row][col],show_mine=g->finished&&!g->won&&mine;
+        int show_flag=g->flagged[row][col]||(g->finished&&g->won&&mine);
+        int hit=g->finished&&!g->won&&mine&&g->cursor==row*MINI_MS_COLS+col;
+        if(g->revealed[row][col]&&!show_mine){
+            fill(d,s,x,y,MS_CELL,MS_CELL,BG?0xdcdcdc:0x11161c);
+            int n=g->adj[row][col];
+            if(n){
+                char digit[2]={(char)('0'+n),0};
+                text(d,s,x+9,y+7,digit,n==7?WHITE:digits[n],1);
+            }
+        }else{
+            fill(d,s,x,y,MS_CELL,MS_CELL,hit?0xe83d42:PANEL);
+            if(show_flag)flag_icon(d,s,x,y);
+            else if(show_mine)mine_icon(d,s,x+MS_CELL/2,y+MS_CELL/2);
+        }
+        if(g->cursor==row*MINI_MS_COLS+col)
+            border(d,s,x+1,y+1,MS_CELL-2,MS_CELL-2,0xffcf64);
+        border(d,s,x,y,MS_CELL,MS_CELL,OUTLINE);
     }
-    basket(d,s,116+g->lane*71,253);
-    footer(d,s,"WHEEL MOVE  CATCH RED APPLES");
+    footer(d,s,"WHEEL MOVE  CENTER REVEAL  PLAY FLAG");
 }
 
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
@@ -522,7 +527,7 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     else if(a->game==ARCADE_CONNECT)connect_four(d,s,a);
     else if(a->game==ARCADE_BATTLE)battleship(d,s,a);
     else if(a->game==ARCADE_ROAD)road_dodge(d,s,a);
-    else catch_apples(d,s,a);
+    else minesweeper(d,s,a);
     if(a->view==VIEW_PAUSE) {
         static const char* names[]={"RESUME","RESTART","GAMES","EXIT"};
         options(d,s,"PAUSED",names,4,a->option);
@@ -533,6 +538,7 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
             if(a->mini.outcome==1)heading=a->game==ARCADE_BATTLE?"FLEET SUNK":"YOU WIN";
             else if(a->mini.outcome==2)heading="CPU WINS";
             else if(a->game==ARCADE_BATTLE)heading="OUT OF SHOTS";
+            else if(a->game==ARCADE_MINES)heading="MINE HIT";
             else if(a->game==ARCADE_TTT||a->game==ARCADE_CONNECT)heading="DRAW";
         }
         if(a->game==ARCADE_TTT&&a->mini.ttt_pvp){

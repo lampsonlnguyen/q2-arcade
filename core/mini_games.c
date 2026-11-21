@@ -4,6 +4,9 @@
  * heuristics (bymayanksingh/connect4 reference).
  * Battleship: randomized non-overlapping ships, hits, misses, sunk status
  * (sehundpark/battleship reference). All game code reimplemented for Q2.
+ * Minesweeper: 9x9 beginner board, safe first reveal, flood-fill uncover,
+ * flagging, mine counter and timer (Rockbox apps/plugins/minesweeper.c
+ * reference). All game code reimplemented for Q2.
  */
 #include "mini_games.h"
 static void zero(void *p,unsigned n){unsigned char *b=p;while(n--)*b++=0;}
@@ -215,12 +218,70 @@ static void battle_place(Q2Mini *g){
         }
     }
 }
+/* Minesweeper: mines are placed on the first reveal, never on or adjacent
+ * to the clicked cell, so the first move is always safe. Adjacent counts
+ * are computed once at placement; uncovering a zero-count cell flood-fills
+ * its neighbours with a bounded explicit stack (81 cells max). */
+static int ms_inside(int x,int y){return x>=0&&x<MINI_MS_COLS&&y>=0&&y<MINI_MS_ROWS;}
+static void ms_place(Q2Mini *g,int safe_x,int safe_y){
+    int placed=0;
+    while(placed<g->mine_total){
+        int x=(int)(rnd(g)%MINI_MS_COLS),y=(int)(rnd(g)%MINI_MS_ROWS);
+        if(g->mines[y][x])continue;
+        if(x>=safe_x-1&&x<=safe_x+1&&y>=safe_y-1&&y<=safe_y+1)continue;
+        g->mines[y][x]=1;placed++;
+    }
+    for(int y=0;y<MINI_MS_ROWS;y++)for(int x=0;x<MINI_MS_COLS;x++){
+        int n=0;
+        for(int dy=-1;dy<=1;dy++)for(int dx=-1;dx<=1;dx++){
+            if(!dx&&!dy)continue;
+            int nx=x+dx,ny=y+dy;
+            if(ms_inside(nx,ny))n+=g->mines[ny][nx];
+        }
+        g->adj[y][x]=(uint8_t)n;
+    }
+    g->started=1;
+}
+static void ms_reveal(Q2Mini *g,int x,int y){
+    /* Explicit stack: flood fill never recurses and never exceeds the board. */
+    int stack[MINI_MS_ROWS*MINI_MS_COLS][2],top=0;
+    stack[top][0]=x;stack[top][1]=y;top++;
+    while(top){
+        int cx=stack[--top][0],cy=stack[top][1];
+        if(!ms_inside(cx,cy)||g->revealed[cy][cx]||g->flagged[cy][cx])continue;
+        g->revealed[cy][cx]=1;g->revealed_count++;
+        if(g->adj[cy][cx])continue;
+        for(int dy=-1;dy<=1;dy++)for(int dx=-1;dx<=1;dx++){
+            if(!dx&&!dy)continue;
+            if(top<MINI_MS_ROWS*MINI_MS_COLS){
+                stack[top][0]=cx+dx;stack[top][1]=cy+dy;top++;
+            }
+        }
+    }
+}
+static int ms_select(Q2Mini *g){
+    int x=g->cursor%MINI_MS_COLS,y=g->cursor/MINI_MS_COLS;
+    if(g->revealed[y][x]||g->flagged[y][x])return 0;
+    if(!g->started)ms_place(g,x,y);
+    g->moves++;
+    if(g->mines[y][x]){
+        g->revealed[y][x]=1;g->revealed_count++;
+        g->finished=1;g->outcome=3;
+        return 1;
+    }
+    ms_reveal(g,x,y);
+    if(g->revealed_count==MINI_MS_COLS*MINI_MS_ROWS-g->mine_total){
+        g->finished=1;g->won=1;g->outcome=1;
+    }
+    return 1;
+}
 void mini_init(Q2Mini *g,int kind,uint32_t seed){
     zero(g,sizeof *g);g->kind=kind;g->rng=seed?seed:1;
     g->ttt_size=3;g->ttt_target=3;g->ttt_turn=1;
     g->lives=3;g->lane=1;g->obstacle_y=-1;
     if(kind==MINI_BATTLE){battle_place(g);g->lives=26;}
-    if(kind==MINI_ROAD||kind==MINI_CATCH)g->obstacle=(int)(rnd(g)%3u);
+    if(kind==MINI_ROAD)g->obstacle=(int)(rnd(g)%3u);
+    if(kind==MINI_MINES){g->mine_total=MINI_MS_MINES;g->cursor=40;}
 }
 void mini_ttt_init(Q2Mini *g,int size,int pvp,uint32_t seed){
     mini_init(g,MINI_TTT,seed);
@@ -231,8 +292,8 @@ void mini_ttt_init(Q2Mini *g,int size,int pvp,uint32_t seed){
 int mini_move(Q2Mini *g,int steps){
     if(g->finished||!steps||(g->kind==MINI_TTT&&!g->ttt_pvp&&g->ttt_turn==2))return 0;
     int count=g->kind==MINI_TTT?g->ttt_size*g->ttt_size:g->kind==MINI_CONNECT?7:
-              g->kind==MINI_BATTLE?36:3;
-    if(g->kind>=MINI_ROAD){
+              g->kind==MINI_BATTLE?36:g->kind==MINI_MINES?MINI_MS_COLS*MINI_MS_ROWS:3;
+    if(g->kind>=MINI_ROAD&&g->kind!=MINI_MINES){
         int v=(g->lane+steps)%count;
         if(v<0)v+=count;
         g->lane=v;
@@ -240,6 +301,17 @@ int mini_move(Q2Mini *g,int steps){
         int v=(g->cursor+steps)%count;
         if(v<0)v+=count;
         g->cursor=v;
+    }
+    return 1;
+}
+int mini_flag(Q2Mini *g){
+    if(g->finished||g->kind!=MINI_MINES)return 0;
+    int x=g->cursor%MINI_MS_COLS,y=g->cursor/MINI_MS_COLS;
+    if(g->revealed[y][x])return 0;
+    if(g->flagged[y][x]){g->flagged[y][x]=0;g->flags_placed--;}
+    else{
+        if(g->flags_placed>=g->mine_total)return 0;
+        g->flagged[y][x]=1;g->flags_placed++;
     }
     return 1;
 }
@@ -277,17 +349,24 @@ int mini_select(Q2Mini *g){
         else if(g->moves>=g->lives){g->finished=1;g->outcome=3;}
         return 1;
     }
+    if(g->kind==MINI_MINES)return ms_select(g);
     return 0;
 }
 int mini_tick(Q2Mini *g){
+    if(g->kind==MINI_MINES){
+        /* One tick per second from the app: run the game timer only once
+         * play has started and before the board is finished. */
+        if(g->started&&!g->finished)g->elapsed_s++;
+        return 1;
+    }
     if(g->kind==MINI_TTT){
         if(g->finished||g->ttt_pvp||g->ttt_turn!=2)return 0;
         ttt_cpu(g);g->ttt_turn=1;return 1;
     }
-    if(g->finished||g->kind<MINI_ROAD)return 0;
+    if(g->finished||g->kind!=MINI_ROAD)return 0;
     ++g->obstacle_y;
     if(g->obstacle_y==8){
-        int collision=g->kind==MINI_ROAD?g->lane==g->obstacle:g->lane!=g->obstacle;
+        int collision=g->lane==g->obstacle;
         if(collision&&g->lives)g->lives--;
         if(!collision)g->score++;
         if(!g->lives){g->finished=1;g->outcome=3;}

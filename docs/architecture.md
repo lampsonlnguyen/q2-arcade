@@ -2,7 +2,7 @@
 
 ## Scope
 
-Q2 Arcade packages Pong, Blocks and Breakout from the earlier `q2-pod/new-builtin-games` work, plus five independent, lightweight handheld-style games: Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Catch. The older firmware games (Sudoku, Vortex, Solitaire and Snake) are already part of Q2 Pod, so their firmware implementations are **not copied** into this optional app. The new game mechanics are implemented in `core/mini_games.c` without external handheld ROMs, sprites, or sound assets.
+Q2 Arcade packages Pong, Blocks and Breakout from the earlier `q2-pod/new-builtin-games` work, plus five independent, lightweight handheld-style games: Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Minesweeper. The older firmware games (Sudoku, Vortex, Solitaire and Snake) are already part of Q2 Pod, so their firmware implementations are **not copied** into this optional app. The new game mechanics are implemented in `core/mini_games.c` without external handheld ROMs, sprites, or sound assets.
 
 This repository **does not** merge or remove firmware changes on the original `new-builtin-games` branch. Firmware-specific code such as `arcade_draw.inc`, `arcade_gameplay.inc`, `games.c`, and `peq.h` references internal firmware APIs and is replaced here by the card's own runtime, menu, drawing and inputs.
 
