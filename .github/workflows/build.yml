@@ -17,8 +17,16 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install build tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang lld make gcc python3 zip unzip file
+          # The runner already supplies these tools. If any are missing, use
+          # Ubuntu's signed sources only; third-party mirrors are not needed.
+          missing=0
+          for tool in clang ld.lld make gcc python3 zip unzip file; do
+            command -v "$tool" >/dev/null || missing=1
+          done
+          if [ "$missing" = 1 ]; then
+            sudo apt-get -o Dir::Etc::sourcelist=sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- update
+            sudo apt-get -o Dir::Etc::sourcelist=sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- install -y clang lld make gcc python3 zip unzip file
+          fi
       - name: Test and build
         run: |
           make check
