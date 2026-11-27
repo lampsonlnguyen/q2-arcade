@@ -1,6 +1,6 @@
 # Q2 Arcade — downloadable game collection for Shanling Q2
 
-Q2 Arcade brings **Pong**, **Blocks (Tetris-style)**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Minesweeper** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
+Q2 Arcade brings **Pong**, **Tetris**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Minesweeper** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
 
 The original Pong/Blocks/Breakout gameplay cores and the portable framework are migrated from [`q2-pod/new-builtin-games`](https://github.com/lampsonlnguyen/q2-pod/tree/new-builtin-games). Unlike the original firmware version, these games are self-contained in one MIPS card executable with a launcher, Q2 framebuffer renderer and input-socket client.
 
@@ -30,7 +30,7 @@ with the list scrolling automatically. Touch selection is also supported.
 | Game | Controls | Goal |
 | --- | --- | --- |
 | Pong | Wheel or Left/Right moves paddle | Outscore the CPU |
-| Blocks | Wheel rotates, Left/Right moves, Play soft-drops, Centre hard-drops | Clear rows |
+| Tetris | Wheel rotates, Left/Right moves, Play soft-drops, Centre hard-drops | Clear rows |
 | Breakout | Wheel or Left/Right moves paddle, Centre launches | Break all bricks |
 | Tic-Tac-Toe | Choose AI or local two-player and 3×3, 6×6, or 9×9; wheel selects, Centre places, Play moves down a row, or tap | Connect 3, 4, or 5 marks respectively |
 | Connect Four | Wheel selects a column, Centre drops a disc, or tap a column | Align four against CPU |
@@ -46,7 +46,7 @@ Within the pause menu, use the wheel or physical Left/Right buttons to select **
 
 **Physical button input:** The card manifest sets `audio=1` so Q2 Pod forwards the Left, Right, and Play/Pause hardware buttons to Arcade rather than the music player. This also stops music playback while Arcade is open. Despite the flag name, Arcade does not generate audio. The wheel rotates Blocks one step per roughly quarter turn, with large flicks limited to one rotation per input packet.
 
-High scores for Blocks and Breakout are saved to `.arcade/highscores` on the SD card.
+High scores for Tetris and Breakout are saved to `.arcade/highscores` on the SD card.
 
 ## Matching the Q2 Pod display theme
 

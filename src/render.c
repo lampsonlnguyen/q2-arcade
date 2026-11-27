@@ -178,7 +178,7 @@ static u32 blend(u32 a, u32 b, unsigned n, unsigned total) {
     return r << 16 | g << 8 | bl;
 }
 static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
-    static const char*const names[]={"SUDOKU","BRICKS","SOLITAIRE","SNAKE","PONG","BLOCKS","BREAKOUT",
+    static const char*const names[]={"SUDOKU","BRICKS","SOLITAIRE","SNAKE","PONG","TETRIS","BREAKOUT",
         "TIC TAC TOE","CONNECT FOUR","BATTLESHIP","ROAD DODGE","MINESWEEPER"};
     int classic=theme->style==ARCADE_CLASSIC, light=classic||theme->light==1;
     u32 paper=light?0xfafafa:0x101010, ink=light?0x171717:0xeeeeec;
@@ -219,7 +219,7 @@ static void pong(u32*d,unsigned s,const ArcadeApp *a) {
 }
 static void blocks(u32*d,unsigned s,const ArcadeApp*a) {
     const Q2Blocks*b=&a->blocks;
-    line_heading(d,s,"BLOCKS");
+    line_heading(d,s,"TETRIS");
     text(d,s,47,63,"SCORE",DIM,1);
     number(d,s,47,79,b->score,WHITE,3);
     text(d,s,258,63,"LEVEL",DIM,1);
