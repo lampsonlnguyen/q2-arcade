@@ -6,13 +6,13 @@ Q2_CFLAGS ?= -Oz -Wall -Wextra -Werror
 Q2_FLAGS = --target=mipsel-linux-gnu -march=mips32r2 -mabi=32 -mfp64 -mnan=2008 -mabs=2008 \
 	-mno-abicalls -fno-pic -G0 -ffreestanding -fno-builtin -fno-stack-protector \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables
-SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c
+SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
 OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o)
 CARD = dist/.arcade
 
 all: dist/q2-arcade.zip
 
-build/q2/%.o: %.c src/app.h src/font.h src/ttt_sprites.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h
+build/q2/%.o: %.c src/app.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h core/original_games.h
 	mkdir -p $(@D)
 	$(Q2_CC) $(Q2_FLAGS) $(Q2_CFLAGS) -std=c11 -Isrc -Icore -c $< -o $@
 
@@ -33,11 +33,11 @@ dist/q2-arcade.zip: $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.txt
 
 build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/app.h src/theme.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
 
-build/menu-theme-test: tests/menu_theme_test.c src/ttt_sprites.h src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c src/app.h src/theme.h
+build/menu-theme-test: tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c core/original_games.c core/original_games.h src/app.h src/theme.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
 
 build/theme-test: tests/theme_test.c src/theme.c src/theme.h
 	mkdir -p $(@D)

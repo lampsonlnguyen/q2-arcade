@@ -7,26 +7,27 @@
 #include "mini_games.h"
 #include "game_framework.h"
 #include "theme.h"
+#include "original_games.h"
 enum { SCREEN_W = 375, SCREEN_H = 320 };
-enum { TTT_AI_DELAY_MS=600, TTT_BOARD_Y=82, TTT_BOARD_PIXELS=198 };
-enum { MENU_TOP = 64, MENU_PITCH = 38, MENU_ROW_H = 34 };
+enum { MENU_TOP = 42, MENU_PITCH = 35, MENU_ROW_H = 35, MENU_VISIBLE = 7 };
 enum { MS_CELL = 25, MS_BOARD_X = 75, MS_BOARD_Y = 64 };
-enum { ARCADE_MENU, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT,
-       ARCADE_TTT, ARCADE_CONNECT, ARCADE_BATTLE, ARCADE_ROAD, ARCADE_MINES, ARCADE_GAME_COUNT };
-enum { VIEW_SELECT, VIEW_PLAY, VIEW_PAUSE, VIEW_OVER, VIEW_TTT_SETUP };
+enum { ARCADE_MENU, ARCADE_SUDOKU, ARCADE_BRICKS, ARCADE_SOLITAIRE, ARCADE_SNAKE, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT,
+       ARCADE_BATTLE, ARCADE_MINES, ARCADE_GAME_COUNT };
+enum { VIEW_SELECT, VIEW_PLAY, VIEW_PAUSE, VIEW_OVER };
 typedef uint32_t u32;
 typedef struct {
+    OriginalGame original;
+    Q2GameRunner runner;
     Q2Pong pong;
     Q2Blocks blocks;
     Q2Breakout breakout;
     Q2Mini mini;
     ArcadeTheme theme;
-    unsigned ttt_ai_remaining;
     int wheel_pixel_remainder;
     unsigned best_blocks, best_breakout, seed, accumulator;
-    int ttt_size_option, ttt_pvp;
     int game, view, selection, option, wheel_remainder, dirty, quit;
 } ArcadeApp;
+int app_menu_first(int selection);
 void app_init(ArcadeApp *app, unsigned seed, unsigned best_blocks, unsigned best_breakout);
 int app_input(ArcadeApp *app, const char *message);
 int app_tick(ArcadeApp *app, unsigned elapsed_ms);

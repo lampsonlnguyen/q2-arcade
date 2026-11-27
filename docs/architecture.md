@@ -2,7 +2,7 @@
 
 ## Scope
 
-Q2 Arcade packages Pong, Blocks and Breakout from the earlier `q2-pod/new-builtin-games` work, plus five independent, lightweight handheld-style games: Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Minesweeper. The older firmware games (Sudoku, Vortex, Solitaire and Snake) are already part of Q2 Pod, so their firmware implementations are **not copied** into this optional app. The new game mechanics are implemented in `core/mini_games.c` without external handheld ROMs, sprites, or sound assets.
+Q2 Arcade packages Pong, Tetris and Breakout, the original Q2 Pod Sudoku, circular Bricks, Solitaire and Snake, and two handheld-style games: Battleship and Minesweeper. The original game rules are adapted in `core/original_games.c`.
 
 This repository **does not** merge or remove firmware changes on the original `new-builtin-games` branch. Firmware-specific code such as `arcade_draw.inc`, `arcade_gameplay.inc`, `games.c`, and `peq.h` references internal firmware APIs and is replaced here by the card's own runtime, menu, drawing and inputs.
 
@@ -75,4 +75,4 @@ Implement a new portable core in `core/`, add its launcher registration in `src/
 
 ### Card app limitations
 
-A card app is a userspace program and cannot simply reuse firmware-specific AWTK windows or internal `games.c` hooks. Any future migration of the **old four built-in games** would be an additional port rather than a straight file copy. This is a native collection of eight games, not an app-store service or a dynamic downloader for arbitrary third-party game code.
+A card app is a userspace program and cannot simply reuse firmware-specific AWTK windows or internal `games.c` hooks. The four original games use portable adapters. This is a native collection of nine games, not an app-store service or a dynamic downloader for arbitrary third-party game code.

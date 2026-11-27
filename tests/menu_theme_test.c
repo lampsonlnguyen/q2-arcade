@@ -23,29 +23,11 @@ static void game_art(void) {
     ArcadeApp app;
     app_init(&app,88,0,0);
     app.view=VIEW_PLAY;
-    app.game=ARCADE_TTT;
-    mini_init(&app.mini,MINI_TTT,12);
-    app.mini.cursor=0;
-    (void)mini_select(&app.mini);
-    (void)mini_tick(&app.mini);
-    app_render(&app,frame,SCREEN_H);
-    assert(count_color(0x72dbf7)>40); /* blue X */
-    assert(count_color(0xffcc66)>40); /* gold O ring */
-    app.game=ARCADE_CONNECT;
-    mini_init(&app.mini,MINI_CONNECT,12);
-    (void)mini_select(&app.mini);
-    app_render(&app,frame,SCREEN_H);
-    assert(count_color(0xe83d42)>40); /* red discs */
-    assert(count_color(0xffd847)>40); /* yellow discs */
     app.game=ARCADE_BATTLE;
     mini_init(&app.mini,MINI_BATTLE,12);
     app_render(&app,frame,SCREEN_H);
     assert(count_color(0x075070)>10); /* sea */
     assert(count_color(0x9ebbc4)>10); /* ship */
-    app.game=ARCADE_ROAD;
-    mini_init(&app.mini,MINI_ROAD,12);
-    app_render(&app,frame,SCREEN_H);
-    assert(count_color(0x23b9d5)>50); /* vehicle body */
     app.game=ARCADE_MINES;
     mini_init(&app.mini,MINI_MINES,12);
     app_render(&app,frame,SCREEN_H);
@@ -62,27 +44,28 @@ int main(void) {
     app_init(&app, 42, 0, 0);
     /* Selected row, away from glyphs and borders. */
     app.theme.style = ARCADE_MINIMAL;
+    app.theme.accent = 0;
+    app_render(&app,frame,SCREEN_H);
+    uint32_t minimal = pixel(145, 52);
+    uint32_t menu_bg = pixel(185, 298);
+    app.theme.style = ARCADE_MODERN;
     app.theme.accent = 4;
     app_render(&app,frame,SCREEN_H);
-    uint32_t minimal = pixel(145, 90);
-    uint32_t menu_bg = pixel(185, 272);
-    app.theme.style = ARCADE_MODERN;
-    app_render(&app,frame,SCREEN_H);
-    uint32_t modern = pixel(145, 90);
+    uint32_t modern = pixel(145, 52);
     assert(modern == arcade_theme_accent(&app.theme));
     assert(minimal != modern);
     app.theme.style = ARCADE_CLASSIC;
     app.theme.accent = 9;
     app_render(&app,frame,SCREEN_H);
-    uint32_t classic = pixel(145, 90);
+    uint32_t classic = pixel(145, 52);
     assert(classic != minimal && classic != modern);
-    assert(pixel(185,272) != menu_bg);
+    assert(pixel(185,298) != menu_bg);
     /* A light-mode Minimal selection still respects the active accent. */
     app.theme.style=ARCADE_MINIMAL;
     app.theme.light=1;
     app.theme.accent=1;
     app_render(&app,frame,SCREEN_H);
-    assert(pixel(145,90) != minimal);
+    assert(pixel(145,52) != minimal);
     game_art();
     puts("menu_theme: all tests passed");
     return 0;
