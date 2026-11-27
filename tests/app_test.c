@@ -9,6 +9,7 @@ static void test_launcher(void) {
     assert(a.view==VIEW_SELECT && a.best_blocks==321);
     assert(app_input(&a,"w -50"));
     assert(a.selection==1);
+    a.selection=ARCADE_BLOCKS-ARCADE_SUDOKU;
     assert(app_input(&a,"k u 218"));
     assert(a.game==ARCADE_BLOCKS && a.view==VIEW_PLAY);
     assert(a.blocks.level==1);
@@ -16,7 +17,7 @@ static void test_launcher(void) {
 static void test_blocks(void) {
     ArcadeApp a;
     app_init(&a, 42, 0, 0);
-    assert(app_input(&a,"w -50"));
+    a.selection=ARCADE_BLOCKS-ARCADE_SUDOKU;
     assert(app_input(&a,"k u 218"));
     int x=a.blocks.x;
     assert(app_input(&a,"k u 223"));
@@ -54,6 +55,7 @@ static void test_breakout(void) {
     app_init(&a, 11, 0, 0);
     assert(app_input(&a,"w -56"));
     assert(a.selection==2);
+    a.selection=ARCADE_BREAKOUT-ARCADE_SUDOKU;
     assert(app_input(&a,"k u 218"));
     assert(a.breakout.remaining==40 && a.breakout.waiting);
     assert(app_input(&a,"k u 218"));
@@ -69,9 +71,9 @@ static void test_handheld(void) {
     for(unsigned i=0;i<sizeof kinds/sizeof kinds[0];i++) {
         ArcadeApp a;
         app_init(&a,31,0,0);
-        for(int n=0;n<kinds[i]-ARCADE_PONG;n++)
+        for(int n=0;n<kinds[i]-ARCADE_SUDOKU;n++)
             assert(app_input(&a,"w -28"));
-        assert(a.selection==kinds[i]-ARCADE_PONG);
+        assert(a.selection==kinds[i]-ARCADE_SUDOKU);
         assert(app_input(&a,"k u 218"));
         if(kinds[i]==ARCADE_TTT){
             assert(a.view==VIEW_TTT_SETUP);
@@ -95,7 +97,7 @@ static void test_handheld(void) {
 }
 static void test_tic_setup(void){
     for(int size=3;size<=9;size+=3){
-        ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_PONG;
+        ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_SUDOKU;
         assert(app_input(&a,"k u 218")&&a.view==VIEW_TTT_SETUP);
         assert(app_input(&a,"k u 170")&&a.view==VIEW_SELECT);
         assert(app_input(&a,"k u 218")&&a.view==VIEW_TTT_SETUP);
@@ -114,7 +116,7 @@ static void test_tic_setup(void){
     }
 }
 static void test_ai_delay(void){
-    ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_PONG;
+    ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_SUDOKU;
     app_input(&a,"k u 218");app_input(&a,"t u 180 216");
     assert(app_input(&a,"k u 218")&&a.mini.moves==1);
     assert(a.ttt_ai_remaining==600&&app_animated(&a));
@@ -156,7 +158,22 @@ static void test_wheel_sensitivity(void){
     assert(app_input(&a,"k u 223")&&a.mini.cursor==2);
     assert(app_input(&a,"t u 180 90")&&a.mini.moves==1);
 }
+static void test_originals(void){
+    for(int i=0;i<ORIGINAL_COUNT;i++){
+        ArcadeApp a;app_init(&a,42,0,0);a.selection=i;
+        assert(app_input(&a,"k u 218")&&a.game==ARCADE_SUDOKU+i);
+        assert(a.runner.status==Q2_GAME_RUNNING);
+        assert(app_input(&a,"k u 170")&&a.runner.status==Q2_GAME_PAUSED);
+        assert(!app_tick(&a,100));
+        assert(app_input(&a,"k u 218")&&a.runner.status==Q2_GAME_RUNNING);
+        if(i==ORIGINAL_BRICKS){assert(app_input(&a,"k u 218"));assert(app_animated(&a));assert(app_tick(&a,40));}
+        if(i==ORIGINAL_SNAKE){assert(a.original.state.snake.len==3);assert(app_tick(&a,40));}
+        if(i==ORIGINAL_SOLITAIRE){assert(a.original.state.sol.len[STOCK]==24);assert(app_input(&a,"k u 218"));assert(a.original.state.sol.len[WASTE]==1);}
+        if(i==ORIGINAL_SUDOKU){int n=0;for(int j=0;j<81;j++)n+=!!(a.original.state.sud.cell[j]&CLUE);assert(n>0&&n<81);}
+    }
+}
 int main(void) {
+    test_originals();
     test_ai_delay();test_wheel_sensitivity();test_tic_setup();
     test_launcher();test_blocks();test_breakout();test_handheld();
     puts("Q2 Arcade card-app input and game integration tests passed");

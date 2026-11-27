@@ -16,13 +16,26 @@ void app_init(ArcadeApp *a, unsigned seed, unsigned best_blocks, unsigned best_b
     a->best_blocks = best_blocks;
     a->best_breakout = best_breakout;
 }
+int app_menu_first(int selection) {
+    return selection>=MENU_VISIBLE?selection-MENU_VISIBLE+1:0;
+}
+static int original_game(const ArcadeApp *a){return a->game>=ARCADE_SUDOKU&&a->game<=ARCADE_SNAKE;}
+static int original_event(ArcadeApp *a,Q2GameAction action,int value,int x,int y){
+    int changed=q2_game_input(&a->runner,(Q2GameInput){action,value,x,y});
+    if(a->original.ended){q2_game_over(&a->runner);a->view=VIEW_OVER;a->option=0;}
+    return changed;
+}
 static void start(ArcadeApp *a, int game) {
     a->game = game;
     a->view = VIEW_PLAY;
     a->wheel_remainder = a->wheel_pixel_remainder = 0;
     a->ttt_ai_remaining=0;
     a->accumulator = 0;
-    if (game == ARCADE_PONG) q2_pong_init(&a->pong);
+    if(original_game(a)){
+        a->original=(OriginalGame){0};a->original.kind=game-ARCADE_SUDOKU;
+        a->original.seed=next_seed(a);a->original.wheel_percent=a->theme.wheel_percent;
+        q2_game_init(&a->runner,&original_hooks,&a->original,10);
+    } else if (game == ARCADE_PONG) q2_pong_init(&a->pong);
     else if (game == ARCADE_BLOCKS) q2_blocks_init(&a->blocks, next_seed(a));
     else if (game == ARCADE_BREAKOUT) q2_breakout_init(&a->breakout);
     else if(game==ARCADE_TTT)mini_ttt_init(&a->mini,3*(a->ttt_size_option+1),a->ttt_pvp,next_seed(a));
@@ -49,21 +62,23 @@ static void finish(ArcadeApp *a) {
 }
 static int select_option(ArcadeApp *a) {
     if (a->view == VIEW_SELECT) {
-        if(ARCADE_PONG+a->selection==ARCADE_TTT){
+        if(ARCADE_SUDOKU+a->selection==ARCADE_TTT){
             a->game=ARCADE_TTT;a->view=VIEW_TTT_SETUP;a->option=0;a->wheel_remainder=0;
-        }else start(a, ARCADE_PONG + a->selection);
+        }else start(a, ARCADE_SUDOKU + a->selection);
     } else if(a->view==VIEW_TTT_SETUP){
         if(a->option==0)a->ttt_pvp=!a->ttt_pvp;
         else if(a->option==1)a->ttt_size_option=(a->ttt_size_option+1)%3;
         else start(a,ARCADE_TTT);
     } else if (a->view == VIEW_PAUSE) {
-        if (a->option == 0) a->view = VIEW_PLAY;
+        if (a->option == 0) { a->view = VIEW_PLAY; if(original_game(a))q2_game_resume(&a->runner); }
         else if (a->option == 1) start(a, a->game);
         else if (a->option == 2) { save_best(a); a->view = VIEW_SELECT; }
         else { save_best(a); a->quit = 1; }
     } else if (a->view == VIEW_OVER) {
         if (a->option == 0) start(a, a->game);
         else { save_best(a); a->view = VIEW_SELECT; }
+    } else if(original_game(a)) {
+        return original_event(a,Q2_GAME_CENTER,0,0,0);
     } else if (a->game == ARCADE_BLOCKS) {
         (void)q2_blocks_drop(&a->blocks);
         finish(a);
@@ -76,7 +91,7 @@ static int select_option(ArcadeApp *a) {
     return 1;
 }
 static int shift_option(ArcadeApp *a, int direction) {
-    int count = a->view == VIEW_SELECT ? ARCADE_GAME_COUNT - ARCADE_PONG : a->view == VIEW_PAUSE ? 4 : a->view == VIEW_TTT_SETUP ? 3 : 2;
+    int count = a->view == VIEW_SELECT ? ARCADE_GAME_COUNT - ARCADE_SUDOKU : a->view == VIEW_PAUSE ? 4 : a->view == VIEW_TTT_SETUP ? 3 : 2;
     int *choice = a->view == VIEW_SELECT ? &a->selection : &a->option;
     *choice = (*choice + (direction > 0 ? 1 : count - 1)) % count;
     return 1;
@@ -85,6 +100,7 @@ static int wheel(ArcadeApp *a, int movement) {
     if (movement > 1000) movement = 1000;
     if (movement < -1000) movement = -1000;
     if (!movement) return 0;
+    if(a->view==VIEW_PLAY&&original_game(a))return original_event(a,Q2_GAME_WHEEL,movement,0,0);
     if(a->view==VIEW_PLAY&&a->game==ARCADE_TTT&&a->ttt_ai_remaining)return 0;
     int pct=a->theme.wheel_percent;
     /* Q2 games receive unscaled raw travel. Match the firmware's sixteenth-unit
@@ -132,7 +148,11 @@ static int wheel(ArcadeApp *a, int movement) {
 static int key(ArcadeApp *a, int button) {
     if (button == KEY_RETURN) {
         if (a->view == VIEW_SELECT) a->quit = 1;
-        else if (a->view == VIEW_PLAY) { a->view = VIEW_PAUSE; a->option = 0; }
+        else if (a->view == VIEW_PLAY) {
+            if(original_game(a)&&a->original.picking)return original_event(a,Q2_GAME_RETURN,0,0,0);
+            if(original_game(a))q2_game_pause(&a->runner);
+            a->view = VIEW_PAUSE; a->option = 0;
+        }
         else if (a->view == VIEW_PAUSE) { save_best(a); a->view = VIEW_SELECT; }
         else a->view = VIEW_SELECT;
         a->wheel_remainder = 0;
@@ -142,6 +162,12 @@ static int key(ArcadeApp *a, int button) {
     if (a->view != VIEW_PLAY) {
         if (button == KEY_LEFT || button == KEY_PREV) return shift_option(a, -1);
         if (button == KEY_RIGHT || button == KEY_NEXT) return shift_option(a, 1);
+        return 0;
+    }
+    if(original_game(a)){
+        if(button==KEY_PLAY){q2_game_pause(&a->runner);a->view=VIEW_PAUSE;a->option=0;return 1;}
+        if(button==KEY_LEFT||button==KEY_PREV)return original_event(a,Q2_GAME_PREV,0,0,0);
+        if(button==KEY_RIGHT||button==KEY_NEXT)return original_event(a,Q2_GAME_NEXT,0,0,0);
         return 0;
     }
     if (a->game == ARCADE_BLOCKS) {
@@ -202,11 +228,10 @@ int app_input(ArcadeApp *a, const char *message) {
     if (message[0] == 't' && message[2] == 'u') {
         int y = number(&p);
         if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return 0;
-        if (a->view == VIEW_SELECT && y >= MENU_TOP && y < MENU_TOP + 4 * MENU_PITCH) {
-            int first=a->selection>=4?a->selection-3:0;
+        if (a->view == VIEW_SELECT && y >= MENU_TOP && y < MENU_TOP + MENU_VISIBLE * MENU_PITCH) {
+            int first=app_menu_first(a->selection);
             a->selection = first + (y - MENU_TOP) / MENU_PITCH;
-            if(a->selection>=ARCADE_GAME_COUNT-ARCADE_PONG)
-                a->selection=ARCADE_GAME_COUNT-ARCADE_PONG-1;
+            if(a->selection>=ARCADE_GAME_COUNT-ARCADE_SUDOKU){a->selection=ARCADE_GAME_COUNT-ARCADE_SUDOKU-1;return 0;}
             return select_option(a);
         }
         if(a->view==VIEW_TTT_SETUP){
@@ -220,6 +245,7 @@ int app_input(ArcadeApp *a, const char *message) {
         }
         if (a->view == VIEW_PLAY) {
             if (y < 48) return key(a, KEY_RETURN);
+            if(original_game(a))return original_event(a,Q2_GAME_TOUCH_UP,0,x,y);
             if (a->game >= ARCADE_TTT) {
                 if(a->game==ARCADE_TTT) {
                     if(a->ttt_ai_remaining)return 0;
@@ -262,10 +288,16 @@ int app_input(ArcadeApp *a, const char *message) {
     return 0;
 }
 int app_animated(const ArcadeApp *a) {
+    if(original_game(a))return a->view==VIEW_PLAY&&original_animated(&a->original);
     return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game == ARCADE_ROAD || a->game == ARCADE_MINES || a->ttt_ai_remaining);
 }
 int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
     if (!app_animated(a)) return 0;
+    if(original_game(a)){
+        unsigned ticks=q2_game_advance(&a->runner,elapsed_ms);
+        if(a->original.ended){q2_game_over(&a->runner);a->view=VIEW_OVER;a->option=0;}
+        return ticks!=0;
+    }
     if (elapsed_ms > 100) elapsed_ms = 100;
     if(a->game==ARCADE_TTT&&a->ttt_ai_remaining){
         if(elapsed_ms<a->ttt_ai_remaining)a->ttt_ai_remaining-=elapsed_ms;

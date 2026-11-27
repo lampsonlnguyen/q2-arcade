@@ -1,0 +1,3 @@
+# Original Q2 Pod games
+
+Rules adapted from [DiamondBond/q2-pod](https://github.com/DiamondBond/q2-pod/blob/fb23157cafc4e80b066a2c026ff9c220c7b29b4b/patch/games.c), GPL-3.0-or-later. Sudoku, circular Bricks, Klondike Solitaire and Snake are first in the launcher. Existing Arcade games remain available. The new ports use Q2GameRunner for input and timing, with the shared Arcade pause/restart menus. The compact launcher uses theme-specific framebuffer colors and is not yet the native firmware browse protocol. Saves for the original games and live firmware status indicators are follow-up work; no firmware save files are read or modified.

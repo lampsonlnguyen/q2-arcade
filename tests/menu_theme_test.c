@@ -62,27 +62,28 @@ int main(void) {
     app_init(&app, 42, 0, 0);
     /* Selected row, away from glyphs and borders. */
     app.theme.style = ARCADE_MINIMAL;
+    app.theme.accent = 0;
+    app_render(&app,frame,SCREEN_H);
+    uint32_t minimal = pixel(145, 52);
+    uint32_t menu_bg = pixel(185, 298);
+    app.theme.style = ARCADE_MODERN;
     app.theme.accent = 4;
     app_render(&app,frame,SCREEN_H);
-    uint32_t minimal = pixel(145, 90);
-    uint32_t menu_bg = pixel(185, 272);
-    app.theme.style = ARCADE_MODERN;
-    app_render(&app,frame,SCREEN_H);
-    uint32_t modern = pixel(145, 90);
+    uint32_t modern = pixel(145, 52);
     assert(modern == arcade_theme_accent(&app.theme));
     assert(minimal != modern);
     app.theme.style = ARCADE_CLASSIC;
     app.theme.accent = 9;
     app_render(&app,frame,SCREEN_H);
-    uint32_t classic = pixel(145, 90);
+    uint32_t classic = pixel(145, 52);
     assert(classic != minimal && classic != modern);
-    assert(pixel(185,272) != menu_bg);
+    assert(pixel(185,298) != menu_bg);
     /* A light-mode Minimal selection still respects the active accent. */
     app.theme.style=ARCADE_MINIMAL;
     app.theme.light=1;
     app.theme.accent=1;
     app_render(&app,frame,SCREEN_H);
-    assert(pixel(145,90) != minimal);
+    assert(pixel(145,52) != minimal);
     game_art();
     puts("menu_theme: all tests passed");
     return 0;
