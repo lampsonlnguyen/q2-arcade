@@ -39,6 +39,13 @@ static void start(ArcadeApp *a, int game) {
     else if (game == ARCADE_BREAKOUT) q2_breakout_init(&a->breakout);
     else mini_init(&a->mini, game - ARCADE_BATTLE, next_seed(a));
 }
+int app_launch(ArcadeApp *a,int game){
+    if(game<ARCADE_SUDOKU||game>=ARCADE_GAME_COUNT)return 0;
+    a->native_menu=1;
+    a->selection=game-ARCADE_SUDOKU;
+    start(a,game);
+    return 1;
+}
 static void save_best(ArcadeApp *a) {
     if (a->game == ARCADE_BLOCKS && a->blocks.score > a->best_blocks) {
         a->best_blocks = a->blocks.score; a->dirty = 1;
@@ -62,11 +69,11 @@ static int select_option(ArcadeApp *a) {
     } else if (a->view == VIEW_PAUSE) {
         if (a->option == 0) { a->view = VIEW_PLAY; if(original_game(a))q2_game_resume(&a->runner); }
         else if (a->option == 1) start(a, a->game);
-        else if (a->option == 2) { save_best(a); a->view = VIEW_SELECT; }
+        else if (a->option == 2) { save_best(a); if(a->native_menu)a->quit=1;else a->view = VIEW_SELECT; }
         else { save_best(a); a->quit = 1; }
     } else if (a->view == VIEW_OVER) {
         if (a->option == 0) start(a, a->game);
-        else { save_best(a); a->view = VIEW_SELECT; }
+        else { save_best(a); if(a->native_menu)a->quit=1;else a->view = VIEW_SELECT; }
     } else if(original_game(a)) {
         return original_event(a,Q2_GAME_CENTER,0,0,0);
     } else if (a->game == ARCADE_BLOCKS) {
@@ -142,7 +149,8 @@ static int key(ArcadeApp *a, int button) {
             if(original_game(a))q2_game_pause(&a->runner);
             a->view = VIEW_PAUSE; a->option = 0;
         }
-        else if (a->view == VIEW_PAUSE) { save_best(a); a->view = VIEW_SELECT; }
+        else if (a->view == VIEW_PAUSE) { save_best(a); if(a->native_menu)a->quit=1;else a->view = VIEW_SELECT; }
+        else if(a->native_menu) a->quit=1;
         else a->view = VIEW_SELECT;
         a->wheel_remainder = 0;
         return 1;

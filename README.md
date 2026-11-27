@@ -9,23 +9,21 @@ The original Pong/Blocks/Breakout gameplay cores and the portable framework are 
 1. From [the successful GitHub Actions build](https://github.com/lampsonlnguyen/q2-arcade/actions), download the artifact called **`q2-arcade-card-app`**. GitHub gives you a ZIP containing **another ZIP**, `q2-arcade.zip`.
 2. **Extract the first ZIP**, then **extract `q2-arcade.zip` directly to the microSD card root**. Do **not** copy just the inner ZIP or leave an extra directory such as `q2-arcade/` around the hidden app folder.
 3. Verify these paths exist on the microSD card (replace `E:` with your card's drive letter):
-   - `E:\.arcade\q2app` (plain text containing `name=Q2 Arcade` and `game=1`)
+   - `E:\.arcade\q2app` (plain text containing `name=Arcade` and `row=games`)
    - `E:\.arcade\q2-arcade` (the MIPS executable, not a `.zip` file)
 4. Safely eject the SD card, insert it in the Q2, then **leave and reopen Library → Games → Q2 Arcade** so Q2 Pod scans the card again.
 
 **Windows tip:** In File Explorer choose **View → Show → Hidden items** if `.arcade` is not visible.
 
-**If Q2 Arcade still does not appear:** Confirm you are running Q2 Pod firmware with SD-card games support (stock Shanling firmware does not provide this custom Games discovery). The firmware scans hidden folders directly beneath the card root, requires a `q2app` file containing `game=1`, and only lists an app if its `q2-arcade` binary is present. If you installed other card games, verify the Arcade folder sits alongside them, not inside their folders.
+**If Q2 Arcade still does not appear:** Confirm you are running Q2 Pod firmware with SD-card games support (stock Shanling firmware does not provide this custom Games discovery). The firmware scans hidden folders directly beneath the card root, requires a `q2app` file containing `row=games`, and only lists an app if its `q2-arcade` binary is present. If you installed other card games, verify the Arcade folder sits alongside them, not inside their folders.
 
-The package contains `.arcade/q2app` (`name=Q2 Arcade`, `game=1`) and `.arcade/q2-arcade`, a freestanding MIPS32 little-endian program.
+The package contains `.arcade/q2app` (`name=Arcade`, `row=games`) and `.arcade/q2-arcade`, a freestanding MIPS32 little-endian program.
 
 If you installed an older build, rename the SD-card folder `.q2-arcade` to `.arcade`; keep `q2-arcade` and `q2app` inside it. This also preserves `highscores`. The folder ID is `arcade`, so Q2 Pod looks for `.arcade/q2-arcade` and sends input to `/tmp/q2-arcade.input.sock`.
 
 ### Controls
 
-The launcher contains nine games. Turn the wheel to scroll the list and
-press Centre to open the highlighted game. Seven entries are visible at once,
-with the list scrolling automatically. Touch selection is also supported.
+The native Q2 Pod launcher contains nine games. Turn the wheel to scroll and press Centre to open a game. The firmware draws the list, status bar, theme and transitions. Touch selection is also supported.
 
 | Game | Controls | Goal |
 | --- | --- | --- |
@@ -123,3 +121,7 @@ Arcade reads **System Settings → Controls → Wheel Sensitivity** (`[Q2POD] WH
 ## Q2 Pod 1.9.6 artwork
 
 The installation ZIP includes a matching purple arcade cabinet icon at 128, 52 and 40 pixels, and a 96-pixel white-on-transparent Home Shortcut pane. Q2 Pod automatically uses `icon.png` (52 px), `icon-40.png` (40 px) and, in 1.9.6 or later, `pane.png` for a card app selected as Home's Shortcut. The 128-pixel `icon-128.png` is supplemental artwork, not a firmware row-icon filename. The pane is tinted by the active firmware theme. The images are generated during `make` by `tools/icons.py` using Python 3 without external libraries; run `python3 tools/icons.py --output dist/.arcade` to regenerate them. CI checks the actual packaged images. Older firmware can ignore the pane without affecting the game executable.
+
+## Native game selection
+
+Arcade follows Mixtape and Utilities using Q2SPOT/1 on /tmp/q2-arcade.browse.sock. Its manifest uses row=games rather than game=1 so firmware opens a native list. Each screen row launches the existing executable with Q2_URI; selecting Games, Exit or Back from pause returns to the native page. The menu process runs from RAM and never opens the framebuffer. Direct execution without Q2_URI retains the legacy launcher for diagnostics. The audio=1 flag gives each game the physical side buttons. Requires firmware supporting screen rows and row=games, including Q2 Pod 1.9.6.

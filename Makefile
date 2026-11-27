@@ -7,7 +7,7 @@ Q2_FLAGS = --target=mipsel-linux-gnu -march=mips32r2 -mabi=32 -mfp64 -mnan=2008 
 	-mno-abicalls -fno-pic -G0 -ffreestanding -fno-builtin -fno-stack-protector \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables
 SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
-OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o)
+OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o src/browse.o src/menu_service.o)
 CARD = dist/.arcade
 PYTHON ?= python3
 ART = icon-128.png icon.png icon-40.png pane.png
@@ -15,7 +15,7 @@ ART_FILES = $(addprefix $(CARD)/,$(ART))
 
 all: dist/q2-arcade.zip
 
-build/q2/%.o: %.c src/app.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h core/original_games.h
+build/q2/%.o: %.c src/app.h src/browse.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h core/original_games.h
 	mkdir -p $(@D)
 	$(Q2_CC) $(Q2_FLAGS) $(Q2_CFLAGS) -std=c11 -Isrc -Icore -c $< -o $@
 
@@ -35,7 +35,12 @@ $(CARD)/LICENSE.txt: LICENSE
 $(ART_FILES) &: tools/icons.py
 	$(PYTHON) tools/icons.py --output $(CARD)
 
-dist/q2-arcade.zip: $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.txt $(ART_FILES)
+$(CARD)/run: run
+	mkdir -p $(@D)
+	tr -d '\r' < $< > $@
+	chmod 755 $@
+
+dist/q2-arcade.zip: $(CARD)/run $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.txt $(ART_FILES)
 	cd dist && rm -f q2-arcade.zip && zip -q q2-arcade.zip $(patsubst dist/%,%,$^)
 
 build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/app.h src/theme.h
@@ -67,7 +72,13 @@ build/mini-game-test: tests/mini_game_test.c core/mini_games.c core/mini_games.h
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Icore -o $@ core/mini_games.c tests/mini_game_test.c
 
-check: build/mini-game-test build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+build/browse-test: tests/browse_test.c src/browse.c src/browse.h src/app.h $(wildcard core/*.c) src/app.c src/theme.c
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/browse_test.c src/browse.c src/app.c src/theme.c $(wildcard core/*.c)
+
+check: build/browse-test build/mini-game-test build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+	./build/browse-test
+	sh -n run
 	./build/mini-game-test
 	./build/app-test
 	./build/theme-test

@@ -3,6 +3,7 @@
  * Startup/syscall pattern adapted from DiamondBond's Buddy/q2-fidget card.
  */
 #include "app.h"
+#include "browse.h"
 long sc(long n,long a,long b,long c,long d,long e,long f);
 __asm__(".text\n.set noreorder\n.globl sc\nsc:\n"
         "move $2, $4\nmove $4, $5\nmove $5, $6\nmove $6, $7\n"
@@ -106,7 +107,17 @@ static void load_theme(const u32 *pixels, unsigned stride) {
     arcade_theme_parse(&app.theme,config,used);
     if (app.theme.light==2) app.theme.light=bright>total/2 ? 1 : 0;
 }
-int q2_main(void) {
+static int is_menu(const char *arg){
+    const char *want="--menu";
+    while(*want&&*arg==*want){++arg;++want;}
+    return !*want&&!*arg;
+}
+int q2_main(int argc,char **argv) {
+    char **env=argv+argc+1;
+    if(argc>1&&is_menu(argv[1]))return arcade_menu_serve();
+    const char *uri=arcade_env(env,"Q2_URI");
+    int game=arcade_uri(uri);
+    if(uri&&game==ARCADE_MENU)return 1;
     unsigned var[40],fix[17];
     int fb=(int)sc(SYS_OPEN,(long)"/dev/fb0",O_RDWR|O_CLOEXEC,0,0,0,0);
     if(fb<0)return 1;
@@ -137,6 +148,7 @@ int q2_main(void) {
     load();
     app_init(&app,now_ms(),saved.blocks,saved.breakout);
     load_theme(pixels+front*stride,stride);
+    if(game!=ARCADE_MENU)app_launch(&app,game);
     unsigned visible=front;
     int can_pan=rows>=2*SCREEN_W && (front==0||front==SCREEN_W);
     struct {int fd;short events,revents;} poll_input={input,1,0};

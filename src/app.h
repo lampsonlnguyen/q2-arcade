@@ -25,8 +25,9 @@ typedef struct {
     ArcadeTheme theme;
     int wheel_pixel_remainder;
     unsigned best_blocks, best_breakout, seed, accumulator;
-    int game, view, selection, option, wheel_remainder, dirty, quit;
+    int game, view, selection, option, wheel_remainder, dirty, quit, native_menu;
 } ArcadeApp;
+int app_launch(ArcadeApp *app,int game);
 int app_menu_first(int selection);
 void app_init(ArcadeApp *app, unsigned seed, unsigned best_blocks, unsigned best_breakout);
 int app_input(ArcadeApp *app, const char *message);
