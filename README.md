@@ -1,6 +1,6 @@
 # Q2 Arcade — downloadable game collection for Shanling Q2
 
-Q2 Arcade brings **Pong**, **Tetris**, **Breakout**, **Tic-Tac-Toe**, **Connect Four**, **Battleship**, **Road Dodge**, and **Minesweeper** to Q2 Pod as **one optional SD-card application**. No firmware patch or replacement of Q2 Pod's existing built-in games is needed.
+Q2 Arcade brings **Sudoku**, **Bricks**, **Solitaire**, **Snake**, **Pong**, **Tetris**, **Breakout**, **Battleship**, and **Minesweeper** to Q2 Pod as one optional SD-card application.
 
 The original Pong/Blocks/Breakout gameplay cores and the portable framework are migrated from [`q2-pod/new-builtin-games`](https://github.com/lampsonlnguyen/q2-pod/tree/new-builtin-games). Unlike the original firmware version, these games are self-contained in one MIPS card executable with a launcher, Q2 framebuffer renderer and input-socket client.
 
@@ -23,19 +23,20 @@ If you installed an older build, rename the SD-card folder `.q2-arcade` to `.arc
 
 ### Controls
 
-The launcher now contains eight games. Turn the wheel to scroll the list and
-press Centre to open the highlighted game. Four entries are visible at once,
+The launcher contains nine games. Turn the wheel to scroll the list and
+press Centre to open the highlighted game. Seven entries are visible at once,
 with the list scrolling automatically. Touch selection is also supported.
 
 | Game | Controls | Goal |
 | --- | --- | --- |
+| Sudoku | Wheel selects cells/digits, Centre edits/confirms | Solve the puzzle |
+| Bricks | Wheel turns paddle, Centre launches | Clear circular brick rings |
+| Solitaire | Wheel selects piles, Centre draws/picks/drops | Build foundations |
+| Snake | Left/Right turns | Eat food and avoid collisions |
 | Pong | Wheel or Left/Right moves paddle | Outscore the CPU |
 | Tetris | Wheel rotates, Left/Right moves, Play soft-drops, Centre hard-drops | Clear rows |
 | Breakout | Wheel or Left/Right moves paddle, Centre launches | Break all bricks |
-| Tic-Tac-Toe | Choose AI or local two-player and 3×3, 6×6, or 9×9; wheel selects, Centre places, Play moves down a row, or tap | Connect 3, 4, or 5 marks respectively |
-| Connect Four | Wheel selects a column, Centre drops a disc, or tap a column | Align four against CPU |
 | Battleship | Wheel selects a cell, Centre fires, or tap a cell | Sink four hidden ships (eight segments) in 26 shots |
-| Road Dodge | Wheel, Left/Right, or tap to change lanes | Steer your car around oncoming traffic |
 | Minesweeper | Wheel, Left/Right, or tap to move the cursor; Centre reveals a cell, Play flags it | Clear the 9×9 board (10 mines) without hitting a mine |
 
 Press Return/Back while playing to open the common pause menu. The games
@@ -55,7 +56,7 @@ The **Arcade game-selection screen** reads the active theme from Q2 Pod's
 Accent settings from [DiamondBond's theme sources](https://github.com/DiamondBond/q2-pod/tree/main/assets/themes)
 are used:
 
-- **Minimal:** themed background and accent-outlined selection cards.
+- **Minimal:** themed background and accent-colored selection rows.
 - **Modern:** accent-colored selection bars and flat list layout.
 - **Classic:** light iPod-inspired layout with a glossy accent selection band.
 
@@ -79,14 +80,14 @@ The distributable file is **`dist/q2-arcade.zip`**. There is no requirement for 
 
 - `core/arcade_core.c/.h` — portable Pong and Blocks logic.
 - `core/breakout_core.c/.h` — portable Breakout logic.
-- `core/mini_games.c/.h` — Tic-Tac-Toe, Connect Four, Battleship, Road Dodge and Minesweeper rules.
+- `core/mini_games.c/.h` — Battleship and Minesweeper rules.
 - `core/game_framework.c/.h` — shared lifecycle, input, update callback infrastructure.
 - `src/app.c/.h` — arcade launcher and input/update adapters.
 - `src/render.c` — lightweight frame drawing without AWTK dependencies.
 - `src/platform_q2.c` — MIPS Linux framebuffer, input datagram socket, timekeeping and SD-card persistence.
 - `tests/` — portable rules, framework and application-input regression tests.
 
-The framework module is included for continued development, but the current games use portable rules with a shared card-level adapter; they have not yet been migrated to the framework callback runner.
+The four original Q2 Pod games use the shared callback runner; other games use the card-level adapter.
 
 For migration notes, implementation boundaries and contributor guidance, see [docs/architecture.md](docs/architecture.md). For the open-source algorithm references and new rendering details, see [docs/mini-games.md](docs/mini-games.md).
 
@@ -96,9 +97,9 @@ Portable games and framework were developed for the `new-builtin-games` branch o
 
 ### Appearance
 
-Arcade reads `/mnt/data/config.ini` when opened and follows Q2 Pod’s Minimal, Modern, or Classic theme, its saved accent, and Light Mode. Auto Light Mode inherits the visible firmware screen’s light/dark appearance at launch; reopen Arcade after a theme change or a day/night transition. Classic uses a flat selection band rather than the firmware’s gloss artwork. Game pieces keep distinct colors for readability. Bottom hints use compact 3×5 lettering centered inside the rounded screen.
+Arcade reads `/mnt/data/config.ini` when opened and follows Q2 Pod’s Minimal, Modern, or Classic theme, its saved accent, and Light Mode. Auto Light Mode inherits the visible firmware screen’s light/dark appearance at launch; reopen Arcade after a theme change or a day/night transition. Classic uses a glossy selection gradient. Game pieces keep distinct colors for readability. Bottom hints use compact 3×5 lettering centered inside the rounded screen.
 
-Menu rows are compact (38-pixel spacing) to leave room for additional entries. Interface text uses smooth glyphs close to the original size, with centered headings and safe screen margins.
+Menu rows are compact (35-pixel spacing) to leave room for additional entries. Interface text uses smooth glyphs close to the original size, with centered headings and safe screen margins.
 
 ## Automatic builds and releases
 
@@ -114,14 +115,7 @@ git push origin v1.0.1
 
 Once the build and package checks pass, Actions creates the release and attaches **q2-arcade.zip** directly. Re-running the tag build replaces that release's ZIP. Branch pushes and manual branch builds only save Actions artifacts.
 
-### Tic-Tac-Toe setup
-
-Opening Tic-Tac-Toe shows **Player vs AI**, **Board**, and **Start Game**. Select a setting and press Centre (or tap it) to cycle. Two-player mode shares the Q2: Player 1 is X, Player 2 is O, and the turn is shown above the board. Restart keeps your chosen mode and size. Return from setup goes back to the game list.
-
-3×3 requires 3 in a row, 6×6 requires 4, and 9×9 requires 5, horizontally, vertically, or diagonally. The 3×3 AI uses minimax; larger boards use bounded open-line scoring with immediate win/block detection. X and O are original transparent PNG sprites in `assets/sprites`, packed into `src/ttt_sprites.h`; no runtime image decoder is needed. To regenerate them, install Pillow and run `python3 tools/make_ttt_sprites.py`.
-
-### Wheel sensitivity and AI turns
+### Wheel sensitivity
 
 Arcade reads **System Settings → Controls → Wheel Sensitivity** (`[Q2POD] WHEELSENSITIVITY`) when opened. Menu and grid navigation use the firmware's tick threshold; paddle movement and Blocks rotation scale with the same percentage. Reopen Arcade after changing the setting. Missing or invalid values use Q2 Pod's default 50%.
 
-In Tic-Tac-Toe against AI, your mark appears immediately, followed by **AI THINKING** for 600 ms before O moves. Extra moves are ignored during this pause; pausing freezes the timer. Local two-player mode has no delay.

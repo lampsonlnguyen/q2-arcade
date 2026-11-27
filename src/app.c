@@ -29,7 +29,6 @@ static void start(ArcadeApp *a, int game) {
     a->game = game;
     a->view = VIEW_PLAY;
     a->wheel_remainder = a->wheel_pixel_remainder = 0;
-    a->ttt_ai_remaining=0;
     a->accumulator = 0;
     if(original_game(a)){
         a->original=(OriginalGame){0};a->original.kind=game-ARCADE_SUDOKU;
@@ -38,8 +37,7 @@ static void start(ArcadeApp *a, int game) {
     } else if (game == ARCADE_PONG) q2_pong_init(&a->pong);
     else if (game == ARCADE_BLOCKS) q2_blocks_init(&a->blocks, next_seed(a));
     else if (game == ARCADE_BREAKOUT) q2_breakout_init(&a->breakout);
-    else if(game==ARCADE_TTT)mini_ttt_init(&a->mini,3*(a->ttt_size_option+1),a->ttt_pvp,next_seed(a));
-    else mini_init(&a->mini, game - ARCADE_TTT, next_seed(a));
+    else mini_init(&a->mini, game - ARCADE_BATTLE, next_seed(a));
 }
 static void save_best(ArcadeApp *a) {
     if (a->game == ARCADE_BLOCKS && a->blocks.score > a->best_blocks) {
@@ -50,11 +48,9 @@ static void save_best(ArcadeApp *a) {
     }
 }
 static void finish(ArcadeApp *a) {
-    if(a->game==ARCADE_TTT&&!a->mini.ttt_pvp&&a->mini.ttt_turn==2&&!a->mini.finished&&!a->ttt_ai_remaining)
-        a->ttt_ai_remaining=TTT_AI_DELAY_MS;
     if ((a->game == ARCADE_BLOCKS && a->blocks.game_over) ||
         (a->game == ARCADE_BREAKOUT && a->breakout.game_over) ||
-        (a->game >= ARCADE_TTT && a->mini.finished)) {
+        (a->game >= ARCADE_BATTLE && a->mini.finished)) {
         save_best(a);
         a->view = VIEW_OVER;
         a->option = 0;
@@ -62,13 +58,7 @@ static void finish(ArcadeApp *a) {
 }
 static int select_option(ArcadeApp *a) {
     if (a->view == VIEW_SELECT) {
-        if(ARCADE_SUDOKU+a->selection==ARCADE_TTT){
-            a->game=ARCADE_TTT;a->view=VIEW_TTT_SETUP;a->option=0;a->wheel_remainder=0;
-        }else start(a, ARCADE_SUDOKU + a->selection);
-    } else if(a->view==VIEW_TTT_SETUP){
-        if(a->option==0)a->ttt_pvp=!a->ttt_pvp;
-        else if(a->option==1)a->ttt_size_option=(a->ttt_size_option+1)%3;
-        else start(a,ARCADE_TTT);
+        start(a, ARCADE_SUDOKU + a->selection);
     } else if (a->view == VIEW_PAUSE) {
         if (a->option == 0) { a->view = VIEW_PLAY; if(original_game(a))q2_game_resume(&a->runner); }
         else if (a->option == 1) start(a, a->game);
@@ -84,14 +74,14 @@ static int select_option(ArcadeApp *a) {
         finish(a);
     } else if (a->game == ARCADE_BREAKOUT) {
         q2_breakout_launch(&a->breakout);
-    } else if (a->game >= ARCADE_TTT) {
+    } else if (a->game >= ARCADE_BATTLE) {
         (void)mini_select(&a->mini);
         finish(a);
     }
     return 1;
 }
 static int shift_option(ArcadeApp *a, int direction) {
-    int count = a->view == VIEW_SELECT ? ARCADE_GAME_COUNT - ARCADE_SUDOKU : a->view == VIEW_PAUSE ? 4 : a->view == VIEW_TTT_SETUP ? 3 : 2;
+    int count = a->view == VIEW_SELECT ? ARCADE_GAME_COUNT - ARCADE_SUDOKU : a->view == VIEW_PAUSE ? 4 : 2;
     int *choice = a->view == VIEW_SELECT ? &a->selection : &a->option;
     *choice = (*choice + (direction > 0 ? 1 : count - 1)) % count;
     return 1;
@@ -101,7 +91,6 @@ static int wheel(ArcadeApp *a, int movement) {
     if (movement < -1000) movement = -1000;
     if (!movement) return 0;
     if(a->view==VIEW_PLAY&&original_game(a))return original_event(a,Q2_GAME_WHEEL,movement,0,0);
-    if(a->view==VIEW_PLAY&&a->game==ARCADE_TTT&&a->ttt_ai_remaining)return 0;
     int pct=a->theme.wheel_percent;
     /* Q2 games receive unscaled raw travel. Match the firmware's sixteenth-unit
      * tick threshold (28 units at 50%), retaining fractional packet travel. */
@@ -135,7 +124,7 @@ static int wheel(ArcadeApp *a, int movement) {
         }
         return steps != 0;
     }
-    if (a->view == VIEW_PLAY && a->game >= ARCADE_TTT) {
+    if (a->view == VIEW_PLAY && a->game >= ARCADE_BATTLE) {
         if(steps) (void)mini_move(&a->mini, steps);
         return steps != 0;
     }
@@ -184,10 +173,9 @@ static int key(ArcadeApp *a, int button) {
         if (button == KEY_LEFT) { q2_pong_move(&a->pong, -14); return 1; }
         if (button == KEY_RIGHT) { q2_pong_move(&a->pong, 14); return 1; }
         if (button == KEY_PLAY) { a->view = VIEW_PAUSE; a->option = 0; return 1; }
-    } else if (a->game >= ARCADE_TTT) {
+    } else if (a->game >= ARCADE_BATTLE) {
         if(button == KEY_LEFT || button == KEY_PREV)return mini_move(&a->mini,-1);
         if(button == KEY_RIGHT || button == KEY_NEXT)return mini_move(&a->mini,1);
-        if(button == KEY_PLAY && a->game == ARCADE_TTT)return mini_move(&a->mini,a->mini.ttt_size);
         if(button == KEY_PLAY && a->game == ARCADE_BATTLE)return mini_move(&a->mini,6);
         if(button == KEY_PLAY && a->game == ARCADE_MINES)return mini_flag(&a->mini);
         return 0;
@@ -234,39 +222,22 @@ int app_input(ArcadeApp *a, const char *message) {
             if(a->selection>=ARCADE_GAME_COUNT-ARCADE_SUDOKU){a->selection=ARCADE_GAME_COUNT-ARCADE_SUDOKU-1;return 0;}
             return select_option(a);
         }
-        if(a->view==VIEW_TTT_SETUP){
-            if(x>=47&&x<328&&y>=100&&y<244){a->option=(y-100)/48;return select_option(a);}
-            return 0;
-        }
         if (a->view != VIEW_PLAY && y >= 105 && y < 284) {
-            int count = a->view == VIEW_PAUSE ? 4 : a->view == VIEW_TTT_SETUP ? 3 : 2;
+            int count = a->view == VIEW_PAUSE ? 4 : 2;
             int index = (y - 105) / (count == 4 ? 43 : 75);
             if (index >= 0 && index < count) { a->option = index; return select_option(a); }
         }
         if (a->view == VIEW_PLAY) {
             if (y < 48) return key(a, KEY_RETURN);
             if(original_game(a))return original_event(a,Q2_GAME_TOUCH_UP,0,x,y);
-            if (a->game >= ARCADE_TTT) {
-                if(a->game==ARCADE_TTT) {
-                    if(a->ttt_ai_remaining)return 0;
-                    int n=a->mini.ttt_size,cell=TTT_BOARD_PIXELS/n;
-                    int left=(SCREEN_W-cell*n)/2;
-                    if(x<left||x>=left+cell*n||y<TTT_BOARD_Y||y>=TTT_BOARD_Y+cell*n)return 0;
-                    a->mini.cursor=((y-TTT_BOARD_Y)/cell)*n+(x-left)/cell;
-                } else if(a->game==ARCADE_CONNECT) {
-                    if(x<39||x>=336||y<79||y>=279)return 0;
-                    a->mini.cursor=(x-39)/42;
-                } else if(a->game==ARCADE_BATTLE) {
+            if (a->game >= ARCADE_BATTLE) {
+                if(a->game==ARCADE_BATTLE) {
                     if(x<56||x>=320||y<69||y>=285)return 0;
                     a->mini.cursor=((y-69)/36)*6+(x-56)/44;
                 } else if(a->game==ARCADE_MINES) {
                     if(x<MS_BOARD_X||x>=MS_BOARD_X+MINI_MS_COLS*MS_CELL||
                        y<MS_BOARD_Y||y>=MS_BOARD_Y+MINI_MS_ROWS*MS_CELL)return 0;
                     a->mini.cursor=((y-MS_BOARD_Y)/MS_CELL)*MINI_MS_COLS+(x-MS_BOARD_X)/MS_CELL;
-                } else {
-                    if(x<80||x>=293||y<70||y>=288)return 0;
-                    a->mini.lane=(x-80)/71;
-                    return 1;
                 }
                 int acted=mini_select(&a->mini);
                 if(acted)finish(a);
@@ -289,7 +260,7 @@ int app_input(ArcadeApp *a, const char *message) {
 }
 int app_animated(const ArcadeApp *a) {
     if(original_game(a))return a->view==VIEW_PLAY&&original_animated(&a->original);
-    return a->view == VIEW_PLAY && (a->game < ARCADE_TTT || a->game == ARCADE_ROAD || a->game == ARCADE_MINES || a->ttt_ai_remaining);
+    return a->view == VIEW_PLAY && (a->game < ARCADE_BATTLE || a->game == ARCADE_MINES);
 }
 int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
     if (!app_animated(a)) return 0;
@@ -299,19 +270,13 @@ int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
         return ticks!=0;
     }
     if (elapsed_ms > 100) elapsed_ms = 100;
-    if(a->game==ARCADE_TTT&&a->ttt_ai_remaining){
-        if(elapsed_ms<a->ttt_ai_remaining)a->ttt_ai_remaining-=elapsed_ms;
-        else {a->ttt_ai_remaining=0;(void)mini_tick(&a->mini);}
-    } else if (a->game == ARCADE_PONG || a->game == ARCADE_BREAKOUT) {
+    if (a->game == ARCADE_PONG || a->game == ARCADE_BREAKOUT) {
         a->accumulator += elapsed_ms * 60u;
         for (int n = 0; n < 6 && a->accumulator >= 1000u; ++n) {
             a->accumulator -= 1000u;
             if (a->game == ARCADE_PONG) q2_pong_tick(&a->pong);
             else q2_breakout_tick(&a->breakout);
         }
-    } else if (a->game == ARCADE_ROAD) {
-        a->accumulator += elapsed_ms;
-        if(a->accumulator >= 180u){a->accumulator%=180u;(void)mini_tick(&a->mini);}
     } else if (a->game == ARCADE_MINES) {
         /* One-second timer ticks; the core only counts while play runs. */
         a->accumulator += elapsed_ms;

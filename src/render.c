@@ -179,7 +179,7 @@ static u32 blend(u32 a, u32 b, unsigned n, unsigned total) {
 }
 static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
     static const char*const names[]={"SUDOKU","BRICKS","SOLITAIRE","SNAKE","PONG","TETRIS","BREAKOUT",
-        "TIC TAC TOE","CONNECT FOUR","BATTLESHIP","ROAD DODGE","MINESWEEPER"};
+        "BATTLESHIP","MINESWEEPER"};
     int classic=theme->style==ARCADE_CLASSIC, light=classic||theme->light==1;
     u32 paper=light?0xfafafa:0x101010, ink=light?0x171717:0xeeeeec;
     u32 accent=arcade_theme_accent(theme), rule=light?0xd4d4d4:0x353535;
@@ -282,70 +282,6 @@ static void stroke(u32*d,unsigned s,int x0,int y0,int x1,int y1,u32 color,int th
         if(e<dx){err+=dx;y0+=sy;}
     }
 }
-/* Packed transparent sprites, tinted and alpha blended without a PNG decoder. */
-#include "ttt_sprites.h"
-static void ttt_piece(u32*d,unsigned s,int x,int y,int size,int mark){
-    u32 color=mark==1?0x72dbf7:0xffcc66;
-    for(int yy=0;yy<size;yy++)for(int xx=0;xx<size;xx++){
-        unsigned alpha=ttt_alpha[mark-1][(yy*64/size)*64+xx*64/size];
-        if(alpha)fill(d,s,x+xx,y+yy,1,1,blend(0x18283a,color,alpha,255));
-    }
-}
-static void tic_setup(u32*d,unsigned s,const ArcadeApp*a){
-    static const char*const boards[]={"BOARD  3 X 3","BOARD  6 X 6","BOARD  9 X 9"};
-    static const char*const rules[]={"3 IN A ROW TO WIN","4 IN A ROW TO WIN","5 IN A ROW TO WIN"};
-    const char*rows[]={a->ttt_pvp?"PLAYER VS PLAYER":"PLAYER VS AI",boards[a->ttt_size_option],"START GAME"};
-    line_heading(d,s,"TIC TAC TOE");
-    centered(d,s,65,"GAME SETUP",DIM,2);
-    for(int i=0;i<3;i++){
-        fill(d,s,47,100+i*48,281,40,i==a->option?SELECT:PANEL);
-        centered(d,s,112+i*48,rows[i],i==a->option?selected_text:WHITE,2);
-    }
-    centered(d,s,260,rules[a->ttt_size_option],DIM,2);
-    footer(d,s,"WHEEL SELECT  CENTER CHANGE");
-}
-static void tic_tac(u32*d,unsigned s,const ArcadeApp*a){
-    const Q2Mini*g=&a->mini;
-    int n=g->ttt_size,cell=TTT_BOARD_PIXELS/n,left=(SCREEN_W-cell*n)/2;
-    line_heading(d,s,"TIC TAC TOE");
-    const char*status=g->ttt_pvp?(g->ttt_turn==1?"PLAYER 1 - X TURN":"PLAYER 2 - O TURN"):a->ttt_ai_remaining?"AI THINKING...":"YOU ARE X - AI IS O";
-    centered(d,s,54,status,DIM,2);
-    fill(d,s,left,TTT_BOARD_Y,cell*n,cell*n,0x18283a);
-    for(int j=1;j<n;j++){
-        fill(d,s,left+j*cell,TTT_BOARD_Y,1,cell*n,0x54788e);
-        fill(d,s,left,TTT_BOARD_Y+j*cell,cell*n,1,0x54788e);
-    }
-    for(int i=0;i<n*n;i++){
-        int col=i%n,row=i/n,x=left+col*cell,y=TTT_BOARD_Y+row*cell;
-        if(i==g->cursor)border(d,s,x+2,y+2,cell-3,cell-3,0xffcf64);
-        int mark=g->board[row][col],size=cell-8;
-        if(mark)ttt_piece(d,s,x+(cell-size)/2,y+(cell-size)/2,size,mark);
-    }
-    footer(d,s,"WHEEL MOVE  CENTER PLACE");
-}
-static void connect_four(u32*d,unsigned s,const ArcadeApp*a){
-    const Q2Mini*g=&a->mini;
-    line_heading(d,s,"CONNECT FOUR");
-    text(d,s,56,52,"RED YOU",0xf2a2a2,1);
-    text(d,s,242,52,"YELLOW CPU",0xf5d878,1);
-    /* Bright blue game frame with recessed round disc slots. */
-    fill(d,s,33,73,309,212,0x163b82);
-    fill(d,s,39,79,297,200,0x2466c7);
-    for(int y=0;y<6;y++)for(int x=0;x<7;x++){
-        int cx=61+x*42,cy=97+y*33;
-        disc(d,s,cx+1,cy+2,15,0x103567);
-        u32 color=g->board[y][x]==1?0xe83d42:
-                  g->board[y][x]==2?0xffd847:0x0b2034;
-        disc(d,s,cx,cy,14,color);
-        if(g->board[y][x]){
-            disc(d,s,cx-4,cy-5,4,g->board[y][x]==1?0xff8b82:0xffee9a);
-        }else disc(d,s,cx-4,cy-5,3,0x24476d);
-        if(x==g->cursor&&y==0)
-            fill(d,s,cx-18,76,36,2,0xffec75);
-    }
-    disc(d,s,61+g->cursor*42,67,6,0xffd847);
-    footer(d,s,"WHEEL COLUMN  CENTER DROP");
-}
 static void ocean(u32*d,unsigned s,int x,int y,int w,int h){
     fill(d,s,x,y,w,h,0x075070);
     for(int j=0;j<h;j+=18){
@@ -402,44 +338,6 @@ static void battleship(u32*d,unsigned s,const ArcadeApp*a){
     else if(g->last_result==1)text(d,s,98,270,"DIRECT HIT",0xffd665,1);
     else if(g->last_result==2)text(d,s,112,270,"SPLASH",0xc0e5f5,1);
     footer(d,s,"WHEEL AIM  CENTER FIRE");
-}
-static void car(u32*d,unsigned s,int cx,int y,u32 body,int enemy){
-    /* Readable top-down automobile: tires, hood, windshield, cabin,
-       headlights and rear lights. */
-    fill(d,s,cx-19,y+9,5,11,0x111923);
-    fill(d,s,cx+14,y+9,5,11,0x111923);
-    fill(d,s,cx-19,y+29,5,11,0x111923);
-    fill(d,s,cx+14,y+29,5,11,0x111923);
-    fill(d,s,cx-15,y+3,30,44,0x172332);
-    fill(d,s,cx-13,y+4,26,42,body);
-    fill(d,s,cx-10,y+14,20,13,enemy?0x7fbbd0:0xa6e0f4);
-    fill(d,s,cx-10,y+29,20,5,0x253b55);
-    fill(d,s,cx-11,y+5,7,4,enemy?0xfc8c74:0xffed91);
-    fill(d,s,cx+4,y+5,7,4,enemy?0xfc8c74:0xffed91);
-    fill(d,s,cx-11,y+39,7,4,enemy?0xfff3cc:0xf54b47);
-    fill(d,s,cx+4,y+39,7,4,enemy?0xfff3cc:0xf54b47);
-    fill(d,s,cx-2,y+14,4,13,0xd6eef5);
-}
-static void road_dodge(u32*d,unsigned s,const ArcadeApp*a){
-    const Q2Mini*g=&a->mini;
-    line_heading(d,s,"ROAD DODGE");
-    text(d,s,36,52,"SCORE",DIM,1);number(d,s,82,52,g->score,WHITE,1);
-    text(d,s,239,52,"LIVES",DIM,1);number(d,s,286,52,g->lives,WHITE,1);
-    fill(d,s,28,68,319,220,0x357d48);
-    /* Edge grass, asphalt, curb and dashed moving lane markers. */
-    fill(d,s,77,69,221,218,0x65757b);
-    fill(d,s,81,69,213,218,0x343b45);
-    fill(d,s,83,69,3,218,0xffd568);
-    fill(d,s,289,69,3,218,0xffd568);
-    for(int lane=1;lane<3;lane++)
-        for(int y=79+(g->obstacle_y*4)%22;y<281;y+=28)
-            fill(d,s,80+lane*71,y,3,14,0xe9e9db);
-    if(g->obstacle_y>=0){
-        int oy=72+g->obstacle_y*23;
-        if(oy<235)car(d,s,116+g->obstacle*71,oy,0xf0a632,1);
-    }
-    car(d,s,116+g->lane*71,232,0x23b9d5,0);
-    footer(d,s,"WHEEL OR LEFT RIGHT STEER");
 }
 static void mine_icon(u32*d,unsigned s,int cx,int cy){
     /* Spiked mine with a white glint, readable at one board cell. */
@@ -552,15 +450,11 @@ static void originals(u32*d,unsigned s,const ArcadeApp*a){
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     fill(d,s,0,0,SCREEN_W,SCREEN_H,BG);
     if(a->view==VIEW_SELECT){menu(d,s,a->selection,&a->theme);return;}
-    if(a->view==VIEW_TTT_SETUP){tic_setup(d,s,a);return;}
     if(a->game>=ARCADE_SUDOKU&&a->game<=ARCADE_SNAKE)originals(d,s,a);
     else if(a->game==ARCADE_PONG)pong(d,s,a);
     else if(a->game==ARCADE_BLOCKS)blocks(d,s,a);
     else if(a->game==ARCADE_BREAKOUT)breakout(d,s,a);
-    else if(a->game==ARCADE_TTT)tic_tac(d,s,a);
-    else if(a->game==ARCADE_CONNECT)connect_four(d,s,a);
     else if(a->game==ARCADE_BATTLE)battleship(d,s,a);
-    else if(a->game==ARCADE_ROAD)road_dodge(d,s,a);
     else minesweeper(d,s,a);
     if(a->view==VIEW_PAUSE) {
         static const char* names[]={"RESUME","RESTART","GAMES","EXIT"};
@@ -569,16 +463,11 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
         static const char* names[]={"RESTART","GAMES"};
         const char *heading="GAME OVER";
         if(a->game>=ARCADE_SUDOKU&&a->game<=ARCADE_SNAKE&&a->original.won)heading="YOU WIN";
-        if(a->game>=ARCADE_TTT) {
+        if(a->game>=ARCADE_BATTLE) {
             if(a->mini.outcome==1)heading=a->game==ARCADE_BATTLE?"FLEET SUNK":"YOU WIN";
             else if(a->mini.outcome==2)heading="CPU WINS";
             else if(a->game==ARCADE_BATTLE)heading="OUT OF SHOTS";
             else if(a->game==ARCADE_MINES)heading="MINE HIT";
-            else if(a->game==ARCADE_TTT||a->game==ARCADE_CONNECT)heading="DRAW";
-        }
-        if(a->game==ARCADE_TTT&&a->mini.ttt_pvp){
-            if(a->mini.outcome==1)heading="X WINS";
-            else if(a->mini.outcome==2)heading="O WINS";
         }
         options(d,s,heading,names,2,a->option);
     }

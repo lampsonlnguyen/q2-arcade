@@ -23,29 +23,11 @@ static void game_art(void) {
     ArcadeApp app;
     app_init(&app,88,0,0);
     app.view=VIEW_PLAY;
-    app.game=ARCADE_TTT;
-    mini_init(&app.mini,MINI_TTT,12);
-    app.mini.cursor=0;
-    (void)mini_select(&app.mini);
-    (void)mini_tick(&app.mini);
-    app_render(&app,frame,SCREEN_H);
-    assert(count_color(0x72dbf7)>40); /* blue X */
-    assert(count_color(0xffcc66)>40); /* gold O ring */
-    app.game=ARCADE_CONNECT;
-    mini_init(&app.mini,MINI_CONNECT,12);
-    (void)mini_select(&app.mini);
-    app_render(&app,frame,SCREEN_H);
-    assert(count_color(0xe83d42)>40); /* red discs */
-    assert(count_color(0xffd847)>40); /* yellow discs */
     app.game=ARCADE_BATTLE;
     mini_init(&app.mini,MINI_BATTLE,12);
     app_render(&app,frame,SCREEN_H);
     assert(count_color(0x075070)>10); /* sea */
     assert(count_color(0x9ebbc4)>10); /* ship */
-    app.game=ARCADE_ROAD;
-    mini_init(&app.mini,MINI_ROAD,12);
-    app_render(&app,frame,SCREEN_H);
-    assert(count_color(0x23b9d5)>50); /* vehicle body */
     app.game=ARCADE_MINES;
     mini_init(&app.mini,MINI_MINES,12);
     app_render(&app,frame,SCREEN_H);

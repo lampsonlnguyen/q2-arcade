@@ -66,8 +66,7 @@ static void test_breakout(void) {
     assert(a.view==VIEW_PAUSE && !app_animated(&a));
 }
 static void test_handheld(void) {
-    static const int kinds[] = {ARCADE_TTT, ARCADE_CONNECT, ARCADE_BATTLE,
-                                ARCADE_ROAD, ARCADE_MINES};
+    static const int kinds[] = {ARCADE_BATTLE, ARCADE_MINES};
     for(unsigned i=0;i<sizeof kinds/sizeof kinds[0];i++) {
         ArcadeApp a;
         app_init(&a,31,0,0);
@@ -75,14 +74,10 @@ static void test_handheld(void) {
             assert(app_input(&a,"w -28"));
         assert(a.selection==kinds[i]-ARCADE_SUDOKU);
         assert(app_input(&a,"k u 218"));
-        if(kinds[i]==ARCADE_TTT){
-            assert(a.view==VIEW_TTT_SETUP);
-            assert(app_input(&a,"t u 180 216"));
-        }
         assert(a.game==kinds[i] && a.view==VIEW_PLAY);
-        assert(a.mini.kind==kinds[i]-ARCADE_TTT);
+        assert(a.mini.kind==kinds[i]-ARCADE_BATTLE);
         assert(app_input(&a,"w -50"));
-        if(kinds[i]<ARCADE_ROAD) {
+        if(kinds[i]==ARCADE_BATTLE) {
             assert(app_input(&a,"k u 218"));
             assert(a.mini.moves>0);
         } else {
@@ -94,46 +89,6 @@ static void test_handheld(void) {
         assert(app_input(&a,"k u 170"));
         assert(a.view==VIEW_SELECT);
     }
-}
-static void test_tic_setup(void){
-    for(int size=3;size<=9;size+=3){
-        ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_SUDOKU;
-        assert(app_input(&a,"k u 218")&&a.view==VIEW_TTT_SETUP);
-        assert(app_input(&a,"k u 170")&&a.view==VIEW_SELECT);
-        assert(app_input(&a,"k u 218")&&a.view==VIEW_TTT_SETUP);
-        assert(app_input(&a,"t u 180 112")&&a.ttt_pvp==1);
-        for(int j=3;j<size;j+=3)assert(app_input(&a,"t u 180 160"));
-        assert(app_input(&a,"t u 180 216")&&a.view==VIEW_PLAY);
-        assert(a.mini.ttt_size==size&&a.mini.ttt_pvp);
-        assert(!app_input(&a,"t u 80 90"));
-        assert(app_input(&a,"t u 180 90")&&a.mini.moves==1&&a.mini.ttt_turn==2);
-        assert(app_input(&a,"k u 171"));
-        assert(app_input(&a,"k u 218")&&a.mini.moves==2&&a.mini.ttt_turn==1);
-        assert(app_input(&a,"k u 170")&&a.view==VIEW_PAUSE);
-        assert(app_input(&a,"k u 223"));
-        assert(app_input(&a,"k u 218")&&a.view==VIEW_PLAY);
-        assert(a.mini.moves==0&&a.mini.ttt_size==size&&a.mini.ttt_pvp);
-    }
-}
-static void test_ai_delay(void){
-    ArcadeApp a;app_init(&a,1,0,0);a.selection=ARCADE_TTT-ARCADE_SUDOKU;
-    app_input(&a,"k u 218");app_input(&a,"t u 180 216");
-    assert(app_input(&a,"k u 218")&&a.mini.moves==1);
-    assert(a.ttt_ai_remaining==600&&app_animated(&a));
-    assert(!app_input(&a,"k u 218")||a.mini.moves==1);
-    assert(!app_input(&a,"t u 180 90"));
-    assert(!app_input(&a,"w -28"));
-    for(int i=0;i<5;i++)assert(app_tick(&a,100));
-    assert(a.mini.moves==1&&a.ttt_ai_remaining==100);
-    assert(app_input(&a,"k u 170")&&a.view==VIEW_PAUSE);
-    assert(!app_tick(&a,100)&&a.ttt_ai_remaining==100);
-    assert(app_input(&a,"k u 218")&&a.view==VIEW_PLAY);
-    assert(app_tick(&a,99)&&a.mini.moves==1);
-    assert(app_tick(&a,1)&&a.mini.moves==2&&!a.ttt_ai_remaining);
-    assert(!app_animated(&a)&&!app_tick(&a,100));
-    /* A human win never schedules an AI reply. */
-    a.mini.board[0][0]=a.mini.board[0][1]=1;a.mini.board[0][2]=0;a.mini.cursor=2;
-    assert(app_input(&a,"k u 218")&&a.view==VIEW_OVER&&!a.ttt_ai_remaining);
 }
 static void test_wheel_sensitivity(void){
     ArcadeApp a;app_init(&a,1,0,0);
@@ -150,13 +105,6 @@ static void test_wheel_sensitivity(void){
     for(int i=0;i<34;i++)(void)app_input(&a,"w -1");
     assert(a.selection==3); /* threshold is 8.75, not rounded to 8 */
     assert(app_input(&a,"w -1")&&a.selection==4);
-    app_init(&a,1,0,0);a.view=VIEW_PLAY;a.game=ARCADE_TTT;
-    mini_ttt_init(&a.mini,3,1,1);a.theme.wheel_percent=10;
-    assert(!app_input(&a,"w -139"));
-    assert(app_input(&a,"w -1")&&a.mini.cursor==1);
-    /* Physical buttons and touch are independent of wheel sensitivity. */
-    assert(app_input(&a,"k u 223")&&a.mini.cursor==2);
-    assert(app_input(&a,"t u 180 90")&&a.mini.moves==1);
 }
 static void test_originals(void){
     for(int i=0;i<ORIGINAL_COUNT;i++){
@@ -174,7 +122,8 @@ static void test_originals(void){
 }
 int main(void) {
     test_originals();
-    test_ai_delay();test_wheel_sensitivity();test_tic_setup();
+    assert(ARCADE_GAME_COUNT-ARCADE_SUDOKU==9);
+    test_wheel_sensitivity();
     test_launcher();test_blocks();test_breakout();test_handheld();
     puts("Q2 Arcade card-app input and game integration tests passed");
     return 0;
