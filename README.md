@@ -125,3 +125,7 @@ The installation ZIP includes a matching purple arcade cabinet icon at 128, 52 a
 ## Native game selection
 
 Arcade follows Mixtape and Utilities using Q2SPOT/1 on /tmp/q2-arcade.browse.sock. Its manifest uses row=games rather than game=1 so firmware opens a native list. Each screen row launches the existing executable with Q2_URI; selecting Games, Exit or Back from pause returns to the native page. The menu process runs from RAM and never opens the framebuffer. Direct execution without Q2_URI retains the legacy launcher for diagnostics. The audio=1 flag gives each game the physical side buttons. Requires firmware supporting screen rows and row=games, including Q2 Pod 1.9.6.
+
+## 8-Ball Pool
+
+Play against the computer with a fixed-step integer physics simulation. Wheel aims; Left/Right fine-tune; hold Centre to charge and release to shoot; Play cycles power; tap the table to aim or place the cue after a foul. Return pauses. The game tracks solids/stripes, first contact, scratches, rail contact and legal eight-ball wins. This initial version uses simplified rules (no special break rerack or called pockets), a basic geometric CPU and no audio. Native launcher lists Pool last.

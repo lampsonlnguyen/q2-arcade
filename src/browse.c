@@ -6,7 +6,7 @@ static const struct {const char *uri,*title;int game;} games[]={
     {"solitaire","Solitaire",ARCADE_SOLITAIRE},{"snake","Snake",ARCADE_SNAKE},
     {"pong","Pong",ARCADE_PONG},{"tetris","Tetris",ARCADE_BLOCKS},
     {"breakout","Breakout",ARCADE_BREAKOUT},{"battleship","Battleship",ARCADE_BATTLE},
-    {"minesweeper","Minesweeper",ARCADE_MINES}
+    {"minesweeper","Minesweeper",ARCADE_MINES},{"pool","8-Ball Pool",ARCADE_POOL}
 };
 static int eq(const char *a,const char *b){
     if(!a||!b)return 0;

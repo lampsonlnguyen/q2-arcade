@@ -122,7 +122,15 @@ static void test_originals(void){
 }
 int main(void) {
     test_originals();
-    assert(ARCADE_GAME_COUNT-ARCADE_SUDOKU==9);
+    ArcadeApp pool;app_init(&pool,42,0,0);
+    assert(app_launch(&pool,ARCADE_POOL));
+    assert(app_input(&pool,"k d 218"));
+    assert(app_tick(&pool,100));
+    assert(app_input(&pool,"k u 218")&&pool.pool.moving);
+    assert(app_input(&pool,"k u 170")&&pool.runner.status==Q2_GAME_PAUSED);
+    assert(!app_tick(&pool,100));
+    assert(app_input(&pool,"k u 218")&&pool.runner.status==Q2_GAME_RUNNING);
+    assert(ARCADE_GAME_COUNT-ARCADE_SUDOKU==10);
     test_wheel_sensitivity();
     test_launcher();test_blocks();test_breakout();test_handheld();
     puts("Q2 Arcade card-app input and game integration tests passed");

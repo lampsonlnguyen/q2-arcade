@@ -7,9 +7,9 @@ int main(void){
     char out[1024];
     size_t n=arcade_menu_reply("Q2SPOT/1\n42\tmenu\t\t\n",out,sizeof out);
     assert(n==strlen(out)&&n>0);
-    const char *expected[]={"sudoku","bricks","solitaire","snake","pong","tetris","breakout","battleship","minesweeper"};
+    const char *expected[]={"sudoku","bricks","solitaire","snake","pong","tetris","breakout","battleship","minesweeper","pool"};
     const char *pos=out;
-    for(int i=0;i<9;i++){
+    for(int i=0;i<10;i++){
         const char *row=strstr(pos,expected[i]);assert(row&&row>pos);
         pos=row+strlen(expected[i]);
         int game=arcade_uri(expected[i]);assert(game==ARCADE_SUDOKU+i);

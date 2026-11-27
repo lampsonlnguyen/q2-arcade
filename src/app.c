@@ -25,6 +25,9 @@ static int original_event(ArcadeApp *a,Q2GameAction action,int value,int x,int y
     if(a->original.ended){q2_game_over(&a->runner);a->view=VIEW_OVER;a->option=0;}
     return changed;
 }
+static int pool_event(ArcadeApp *a,Q2GameAction action,int value,int x,int y){
+    return q2_game_input(&a->runner,(Q2GameInput){action,value,x,y});
+}
 static void start(ArcadeApp *a, int game) {
     a->game = game;
     a->view = VIEW_PLAY;
@@ -34,6 +37,10 @@ static void start(ArcadeApp *a, int game) {
         a->original=(OriginalGame){0};a->original.kind=game-ARCADE_SUDOKU;
         a->original.seed=next_seed(a);a->original.wheel_percent=a->theme.wheel_percent;
         q2_game_init(&a->runner,&original_hooks,&a->original,10);
+    } else if(game==ARCADE_POOL){
+        pool_init(&a->pool,next_seed(a),0);
+        a->pool.wheel_percent=a->theme.wheel_percent;
+        q2_game_init(&a->runner,&pool_hooks,&a->pool,10);
     } else if (game == ARCADE_PONG) q2_pong_init(&a->pong);
     else if (game == ARCADE_BLOCKS) q2_blocks_init(&a->blocks, next_seed(a));
     else if (game == ARCADE_BREAKOUT) q2_breakout_init(&a->breakout);
@@ -57,7 +64,7 @@ static void save_best(ArcadeApp *a) {
 static void finish(ArcadeApp *a) {
     if ((a->game == ARCADE_BLOCKS && a->blocks.game_over) ||
         (a->game == ARCADE_BREAKOUT && a->breakout.game_over) ||
-        (a->game >= ARCADE_BATTLE && a->mini.finished)) {
+        (a->game >= ARCADE_BATTLE && a->game <= ARCADE_MINES && a->mini.finished)) {
         save_best(a);
         a->view = VIEW_OVER;
         a->option = 0;
@@ -67,13 +74,15 @@ static int select_option(ArcadeApp *a) {
     if (a->view == VIEW_SELECT) {
         start(a, ARCADE_SUDOKU + a->selection);
     } else if (a->view == VIEW_PAUSE) {
-        if (a->option == 0) { a->view = VIEW_PLAY; if(original_game(a))q2_game_resume(&a->runner); }
+        if (a->option == 0) { a->view = VIEW_PLAY; if(original_game(a)||a->game==ARCADE_POOL)q2_game_resume(&a->runner); }
         else if (a->option == 1) start(a, a->game);
         else if (a->option == 2) { save_best(a); if(a->native_menu)a->quit=1;else a->view = VIEW_SELECT; }
         else { save_best(a); a->quit = 1; }
     } else if (a->view == VIEW_OVER) {
         if (a->option == 0) start(a, a->game);
         else { save_best(a); if(a->native_menu)a->quit=1;else a->view = VIEW_SELECT; }
+    } else if(a->game==ARCADE_POOL){
+        return pool_event(a,Q2_GAME_CENTER,0,0,0);
     } else if(original_game(a)) {
         return original_event(a,Q2_GAME_CENTER,0,0,0);
     } else if (a->game == ARCADE_BLOCKS) {
@@ -81,7 +90,7 @@ static int select_option(ArcadeApp *a) {
         finish(a);
     } else if (a->game == ARCADE_BREAKOUT) {
         q2_breakout_launch(&a->breakout);
-    } else if (a->game >= ARCADE_BATTLE) {
+    } else if (a->game >= ARCADE_BATTLE && a->game <= ARCADE_MINES) {
         (void)mini_select(&a->mini);
         finish(a);
     }
@@ -97,6 +106,7 @@ static int wheel(ArcadeApp *a, int movement) {
     if (movement > 1000) movement = 1000;
     if (movement < -1000) movement = -1000;
     if (!movement) return 0;
+    if(a->view==VIEW_PLAY&&a->game==ARCADE_POOL)return pool_event(a,Q2_GAME_WHEEL,movement,0,0);
     if(a->view==VIEW_PLAY&&original_game(a))return original_event(a,Q2_GAME_WHEEL,movement,0,0);
     int pct=a->theme.wheel_percent;
     /* Q2 games receive unscaled raw travel. Match the firmware's sixteenth-unit
@@ -131,7 +141,7 @@ static int wheel(ArcadeApp *a, int movement) {
         }
         return steps != 0;
     }
-    if (a->view == VIEW_PLAY && a->game >= ARCADE_BATTLE) {
+    if (a->view == VIEW_PLAY && a->game >= ARCADE_BATTLE && a->game <= ARCADE_MINES) {
         if(steps) (void)mini_move(&a->mini, steps);
         return steps != 0;
     }
@@ -146,7 +156,8 @@ static int key(ArcadeApp *a, int button) {
         if (a->view == VIEW_SELECT) a->quit = 1;
         else if (a->view == VIEW_PLAY) {
             if(original_game(a)&&a->original.picking)return original_event(a,Q2_GAME_RETURN,0,0,0);
-            if(original_game(a))q2_game_pause(&a->runner);
+            if(original_game(a)||a->game==ARCADE_POOL)q2_game_pause(&a->runner);
+            if(a->game==ARCADE_POOL)a->pool.charging=0;
             a->view = VIEW_PAUSE; a->option = 0;
         }
         else if (a->view == VIEW_PAUSE) { save_best(a); if(a->native_menu)a->quit=1;else a->view = VIEW_SELECT; }
@@ -159,6 +170,12 @@ static int key(ArcadeApp *a, int button) {
     if (a->view != VIEW_PLAY) {
         if (button == KEY_LEFT || button == KEY_PREV) return shift_option(a, -1);
         if (button == KEY_RIGHT || button == KEY_NEXT) return shift_option(a, 1);
+        return 0;
+    }
+    if(a->game==ARCADE_POOL){
+        if(button==KEY_LEFT||button==KEY_PREV)return pool_event(a,Q2_GAME_PREV,0,0,0);
+        if(button==KEY_RIGHT||button==KEY_NEXT)return pool_event(a,Q2_GAME_NEXT,0,0,0);
+        if(button==KEY_PLAY)return pool_event(a,Q2_GAME_PLAY,0,0,0);
         return 0;
     }
     if(original_game(a)){
@@ -181,7 +198,7 @@ static int key(ArcadeApp *a, int button) {
         if (button == KEY_LEFT) { q2_pong_move(&a->pong, -14); return 1; }
         if (button == KEY_RIGHT) { q2_pong_move(&a->pong, 14); return 1; }
         if (button == KEY_PLAY) { a->view = VIEW_PAUSE; a->option = 0; return 1; }
-    } else if (a->game >= ARCADE_BATTLE) {
+    } else if (a->game >= ARCADE_BATTLE && a->game <= ARCADE_MINES) {
         if(button == KEY_LEFT || button == KEY_PREV)return mini_move(&a->mini,-1);
         if(button == KEY_RIGHT || button == KEY_NEXT)return mini_move(&a->mini,1);
         if(button == KEY_PLAY && a->game == ARCADE_BATTLE)return mini_move(&a->mini,6);
@@ -219,6 +236,14 @@ int app_input(ArcadeApp *a, const char *message) {
     if (!message[2] || message[3] != ' ') return 0;
     const char *p = message + 4;
     int x = number(&p);
+    if(message[0]=='k'&&x==KEY_CENTER&&a->game==ARCADE_POOL&&a->view==VIEW_PLAY){
+        if(message[2]=='d'){
+            if(a->pool.moving||a->pool.ended||a->pool.ball_in_hand||(!a->pool.local&&a->pool.turn==1))return 0;
+            if(!a->pool.charging){a->pool.charging=1;a->pool.power=20;}
+            return 1;
+        }
+        if(message[2]=='u'&&a->pool.charging){a->pool.charging=0;return pool_event(a,Q2_GAME_CENTER,0,0,0);}
+    }
     if (message[0] == 'k' && message[2] == 'u' && x < 2000000)
         return key(a, x);
     if (message[0] == 't' && message[2] == 'u') {
@@ -237,8 +262,9 @@ int app_input(ArcadeApp *a, const char *message) {
         }
         if (a->view == VIEW_PLAY) {
             if (y < 48) return key(a, KEY_RETURN);
+            if(a->game==ARCADE_POOL)return pool_event(a,Q2_GAME_TOUCH_UP,0,x,y);
             if(original_game(a))return original_event(a,Q2_GAME_TOUCH_UP,0,x,y);
-            if (a->game >= ARCADE_BATTLE) {
+            if (a->game >= ARCADE_BATTLE && a->game <= ARCADE_MINES) {
                 if(a->game==ARCADE_BATTLE) {
                     if(x<56||x>=320||y<69||y>=285)return 0;
                     a->mini.cursor=((y-69)/36)*6+(x-56)/44;
@@ -267,11 +293,17 @@ int app_input(ArcadeApp *a, const char *message) {
     return 0;
 }
 int app_animated(const ArcadeApp *a) {
+    if(a->game==ARCADE_POOL)return a->view==VIEW_PLAY&&pool_animated(&a->pool);
     if(original_game(a))return a->view==VIEW_PLAY&&original_animated(&a->original);
     return a->view == VIEW_PLAY && (a->game < ARCADE_BATTLE || a->game == ARCADE_MINES);
 }
 int app_tick(ArcadeApp *a, unsigned elapsed_ms) {
     if (!app_animated(a)) return 0;
+    if(a->game==ARCADE_POOL){
+        unsigned ticks=q2_game_advance(&a->runner,elapsed_ms);
+        if(a->pool.ended){q2_game_over(&a->runner);a->view=VIEW_OVER;a->option=0;}
+        return ticks!=0;
+    }
     if(original_game(a)){
         unsigned ticks=q2_game_advance(&a->runner,elapsed_ms);
         if(a->original.ended){q2_game_over(&a->runner);a->view=VIEW_OVER;a->option=0;}

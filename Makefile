@@ -6,7 +6,7 @@ Q2_CFLAGS ?= -Oz -Wall -Wextra -Werror
 Q2_FLAGS = --target=mipsel-linux-gnu -march=mips32r2 -mabi=32 -mfp64 -mnan=2008 -mabs=2008 \
 	-mno-abicalls -fno-pic -G0 -ffreestanding -fno-builtin -fno-stack-protector \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables
-SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
+SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c core/pool_core.c
 OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o src/browse.o src/menu_service.o)
 CARD = dist/.arcade
 PYTHON ?= python3
@@ -15,7 +15,7 @@ ART_FILES = $(addprefix $(CARD)/,$(ART))
 
 all: dist/q2-arcade.zip
 
-build/q2/%.o: %.c src/app.h src/browse.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h core/original_games.h
+build/q2/%.o: %.c src/app.h src/browse.h src/font.h core/arcade_core.h core/breakout_core.h core/mini_games.h core/game_framework.h core/original_games.h core/pool_core.h
 	mkdir -p $(@D)
 	$(Q2_CC) $(Q2_FLAGS) $(Q2_CFLAGS) -std=c11 -Isrc -Icore -c $< -o $@
 
@@ -45,11 +45,11 @@ dist/q2-arcade.zip: $(CARD)/run $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.
 
 build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/app.h src/theme.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/app_test.c src/app.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c core/pool_core.c
 
-build/menu-theme-test: tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c core/original_games.c core/original_games.h src/app.h src/theme.h
+build/menu-theme-test: tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/game_framework.c core/original_games.c core/pool_core.c core/original_games.h core/pool_core.h src/app.h src/theme.h
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
+	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/menu_theme_test.c src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c core/pool_core.c
 
 build/theme-test: tests/theme_test.c src/theme.c src/theme.h
 	mkdir -p $(@D)
@@ -76,7 +76,12 @@ build/browse-test: tests/browse_test.c src/browse.c src/browse.h src/app.h $(wil
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -std=c11 -Isrc -Icore -o $@ tests/browse_test.c src/browse.c src/app.c src/theme.c $(wildcard core/*.c)
 
-check: build/browse-test build/mini-game-test build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+build/pool-test: tests/pool_core_test.c core/pool_core.c core/pool_core.h core/original_games.c
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=c11 -Icore -o $@ tests/pool_core_test.c core/pool_core.c core/original_games.c
+
+check: build/pool-test build/browse-test build/mini-game-test build/app-test build/theme-test build/menu-theme-test build/arcade-core-test build/breakout-core-test build/game-framework-test
+	./build/pool-test
 	./build/browse-test
 	sh -n run
 	./build/mini-game-test

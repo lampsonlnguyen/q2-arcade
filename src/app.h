@@ -8,11 +8,12 @@
 #include "game_framework.h"
 #include "theme.h"
 #include "original_games.h"
+#include "pool_core.h"
 enum { SCREEN_W = 375, SCREEN_H = 320 };
 enum { MENU_TOP = 42, MENU_PITCH = 35, MENU_ROW_H = 35, MENU_VISIBLE = 7 };
 enum { MS_CELL = 25, MS_BOARD_X = 75, MS_BOARD_Y = 64 };
 enum { ARCADE_MENU, ARCADE_SUDOKU, ARCADE_BRICKS, ARCADE_SOLITAIRE, ARCADE_SNAKE, ARCADE_PONG, ARCADE_BLOCKS, ARCADE_BREAKOUT,
-       ARCADE_BATTLE, ARCADE_MINES, ARCADE_GAME_COUNT };
+       ARCADE_BATTLE, ARCADE_MINES, ARCADE_POOL, ARCADE_GAME_COUNT };
 enum { VIEW_SELECT, VIEW_PLAY, VIEW_PAUSE, VIEW_OVER };
 typedef uint32_t u32;
 typedef struct {
@@ -22,6 +23,7 @@ typedef struct {
     Q2Blocks blocks;
     Q2Breakout breakout;
     Q2Mini mini;
+    Q2Pool pool;
     ArcadeTheme theme;
     int wheel_pixel_remainder;
     unsigned best_blocks, best_breakout, seed, accumulator;

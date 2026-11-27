@@ -179,7 +179,7 @@ static u32 blend(u32 a, u32 b, unsigned n, unsigned total) {
 }
 static void menu(u32*d,unsigned stride,int selection,const ArcadeTheme *theme) {
     static const char*const names[]={"SUDOKU","BRICKS","SOLITAIRE","SNAKE","PONG","TETRIS","BREAKOUT",
-        "BATTLESHIP","MINESWEEPER"};
+        "BATTLESHIP","MINESWEEPER","8-BALL POOL"};
     int classic=theme->style==ARCADE_CLASSIC, light=classic||theme->light==1;
     u32 paper=light?0xfafafa:0x101010, ink=light?0x171717:0xeeeeec;
     u32 accent=arcade_theme_accent(theme), rule=light?0xd4d4d4:0x353535;
@@ -447,6 +447,76 @@ static void originals(u32*d,unsigned s,const ArcadeApp*a){
     }
 }
 
+static void pool_line(u32*d,unsigned s,int x,int y,int tx,int ty,u32 c,int radius){
+    int dx=tx-x,dy=ty-y,n=dx<0?-dx:dx,ay=dy<0?-dy:dy;
+    if(ay>n)n=ay;
+    if(!n)return;
+    for(int i=0;i<=n;i++)disc(d,s,x+dx*i/n,y+dy*i/n,radius,c);
+}
+static void pool_render(u32*d,unsigned s,const ArcadeApp*a){
+    const Q2Pool*p=&a->pool;
+    static const u32 colors[]={0xf8f8ee,0xf6c332,0x2559cc,0xd02f35,0x753ba2,0xf08025,0x15875b,0x872e28,0x171717};
+    line_heading(d,s,"8-BALL POOL");
+    text(d,s,12,49,p->turn==0?"PLAYER >":"PLAYER",WHITE,1);
+    text(d,s,279,49,p->local?"PLAYER 2":"CPU",p->turn?GOLD:WHITE,1);
+    for(int k=0;k<2;k++)for(int i=0;i<7;i++){
+        int g=p->group[k],ball=g==2?9+i:1+i;
+        int x=k?205+i*10:85+i*10;
+        disc(d,s,x,55,4,g&& !p->balls[ball].live?colors[(ball-1)%8+1]:OUTLINE);
+    }
+    fill(d,s,8,59,359,213,0x512f1b);
+    for(int y=0;y<7;y++){
+        u32 c=blend(0xb07c43,0x55321c,(unsigned)y,7);
+        fill(d,s,12,59+y,351,1,c);fill(d,s,12,265+y,351,1,c);
+    }
+    fill(d,s,19,66,337,198,0x10482d);
+    fill(d,s,POOL_LEFT,POOL_TOP,POOL_RIGHT-POOL_LEFT+1,POOL_BOTTOM-POOL_TOP+1,0x206a3d);
+    for(int y=POOL_TOP+2;y<POOL_BOTTOM-1;y++){
+        int dy=y-160;if(dy<0)dy=-dy;
+        fill(d,s,POOL_LEFT+2,y,POOL_RIGHT-POOL_LEFT-3,1,blend(0x2c8c4e,0x185c35,(unsigned)dy,95));
+    }
+    for(int i=0;i<3;i++)for(int k=0;k<2;k++){
+        int x=i==0?POOL_LEFT:i==1?187:POOL_RIGHT,y=k?POOL_BOTTOM:POOL_TOP;
+        disc(d,s,x,y,11,0x151e17);disc(d,s,x,y,9,0x030604);
+    }
+    for(int x=70;x<340;x+=38){disc(d,s,x,62,1,0xe8d8ba);disc(d,s,x,268,1,0xe8d8ba);}
+    fill(d,s,100,78,1,164,0x438b56);
+    const PoolBall *cue=&p->balls[0];
+    if(cue->live&&!p->moving&&!p->ended&&!p->ball_in_hand){
+        int x=cue->x/POOL_SCALE,y=cue->y/POOL_SCALE,dx=original_cos(p->angle)/256,dy=original_sin(p->angle)/256;
+        int lastx=x,lasty=y;
+        for(int i=8;i<320;i+=3){
+            int xx=x+dx*i/256,yy=y+dy*i/256,hit=0;
+            if(xx<POOL_LEFT+6||xx>POOL_RIGHT-6||yy<POOL_TOP+6||yy>POOL_BOTTOM-6)break;
+            for(int j=1;j<16;j++)if(p->balls[j].live){
+                int bx=xx-p->balls[j].x/POOL_SCALE,by=yy-p->balls[j].y/POOL_SCALE;
+                if(bx*bx+by*by<144){hit=1;break;}
+            }
+            lastx=xx;lasty=yy;
+            if(hit)break;
+            if(i%2==0)disc(d,s,xx,yy,1,0x9ce3b2);
+        }
+        for(int i=0;i<16;i++)disc(d,s,lastx+original_cos(i*64)*6/65536,lasty+original_sin(i*64)*6/65536,1,0xc6efce);
+        int off=12+(p->charging?p->power/5:0);
+        pool_line(d,s,x-dx*(off+65)/256,y-dy*(off+65)/256,x-dx*off/256,y-dy*off/256,0x543623,2);
+        pool_line(d,s,x-dx*(off+65)/256,y-dy*(off+65)/256,x-dx*off/256,y-dy*off/256,0xe6bd76,1);
+    }
+    for(int i=0;i<16;i++)if(p->balls[i].live){
+        int x=p->balls[i].x/POOL_SCALE,y=p->balls[i].y/POOL_SCALE;
+        u32 c=colors[i>8?i-8:i];
+        disc(d,s,x+1,y+2,7,0x16412a);disc(d,s,x,y,6,i>8?0xf2f1e9:c);
+        if(i>8)for(int yy=-3;yy<=3;yy++){int w=yy==3||yy==-3?4:5;fill(d,s,x-w,y+yy,w*2+1,1,c);}
+        if(i){disc(d,s,x,y,3,0xf9f9f5);/* tiny binary-coded number glyph */
+            static const unsigned short digits[]={0x7b6f,0x2492,0x73e7,0x73cf,0x5bc9,0x79cf,0x79ef,0x7249,0x7bef,0x7bcf};
+            int n=i%10;for(int yy=0;yy<5;yy++)for(int xx=0;xx<3;xx++)if(digits[n]&(1u<<(14-yy*3-xx)))fill(d,s,x-1+xx,y-2+yy,1,1,0x242424);
+        }else disc(d,s,x-2,y-2,2,0xffffff);
+    }
+    text(d,s,15,279,"POWER",WHITE,1);
+    fill(d,s,60,281,155,9,OUTLINE);fill(d,s,60,281,p->power*155/100,9,0xe8bc42);
+    text(d,s,232,279,p->ball_in_hand?"PLACE CUE":p->moving?"ROLLING":p->turn&&!p->local?"CPU AIMING":"AIM / SHOOT",WHITE,1);
+    footer(d,s,p->ball_in_hand?"TOUCH TABLE TO PLACE CUE":"WHEEL AIM  HOLD CENTER SHOOT  PLAY POWER");
+}
+
 void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     fill(d,s,0,0,SCREEN_W,SCREEN_H,BG);
     if(a->view==VIEW_SELECT){menu(d,s,a->selection,&a->theme);return;}
@@ -455,6 +525,7 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
     else if(a->game==ARCADE_BLOCKS)blocks(d,s,a);
     else if(a->game==ARCADE_BREAKOUT)breakout(d,s,a);
     else if(a->game==ARCADE_BATTLE)battleship(d,s,a);
+    else if(a->game==ARCADE_POOL)pool_render(d,s,a);
     else minesweeper(d,s,a);
     if(a->view==VIEW_PAUSE) {
         static const char* names[]={"RESUME","RESTART","GAMES","EXIT"};
@@ -463,7 +534,8 @@ void app_render(const ArcadeApp *a, u32 *d, unsigned s) {
         static const char* names[]={"RESTART","GAMES"};
         const char *heading="GAME OVER";
         if(a->game>=ARCADE_SUDOKU&&a->game<=ARCADE_SNAKE&&a->original.won)heading="YOU WIN";
-        if(a->game>=ARCADE_BATTLE) {
+        if(a->game==ARCADE_POOL)heading=a->pool.winner==0?"YOU WIN":"CPU WINS";
+        if(a->game>=ARCADE_BATTLE&&a->game<=ARCADE_MINES) {
             if(a->mini.outcome==1)heading=a->game==ARCADE_BATTLE?"FLEET SUNK":"YOU WIN";
             else if(a->mini.outcome==2)heading="CPU WINS";
             else if(a->game==ARCADE_BATTLE)heading="OUT OF SHOTS";

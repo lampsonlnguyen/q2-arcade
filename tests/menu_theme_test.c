@@ -67,6 +67,10 @@ int main(void) {
     app_render(&app,frame,SCREEN_H);
     assert(pixel(145,52) != minimal);
     game_art();
+    assert(app_launch(&app,ARCADE_POOL));
+    app_render(&app,frame,SCREEN_H);
+    assert(count_color(0x206a3d)>100);
+    assert(count_color(0xf6c332)>10);
     puts("menu_theme: all tests passed");
     return 0;
 }
