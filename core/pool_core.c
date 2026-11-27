@@ -151,7 +151,7 @@ void pool_step(Q2Pool *p,unsigned ms){
         for(int j=i+1;j<16;j++)if(p->balls[j].live)collide(p,i,j);
     int moving=0;
     for(int i=0;i<16;i++)if(p->balls[i].live){
-        PoolBall *b=&p->balls[i];b->vx=b->vx*248/256;b->vy=b->vy*248/256;
+        PoolBall *b=&p->balls[i];b->vx=b->vx*252/256;b->vy=b->vy*252/256;
         if(abs_i(b->vx)<7)b->vx=0;
         if(abs_i(b->vy)<7)b->vy=0;
         moving|=b->vx||b->vy;

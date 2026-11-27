@@ -129,3 +129,7 @@ Arcade follows Mixtape and Utilities using Q2SPOT/1 on /tmp/q2-arcade.browse.soc
 ## 8-Ball Pool
 
 Play against the computer with a fixed-step integer physics simulation. Wheel aims; Left/Right fine-tune; hold Centre to charge and release to shoot; Play cycles power; tap the table to aim or place the cue after a foul. Return pauses. The game tracks solids/stripes, first contact, scratches, rail contact and legal eight-ball wins. This initial version uses simplified rules (no special break rerack or called pockets), a basic geometric CPU and no audio. Native launcher lists Pool last.
+
+### Publish from GitHub Actions
+
+Open Actions → Build and release q2-arcade → Run workflow, choose main and enter a new version such as `v1.6.0`. The workflow tests, builds and verifies the package, then creates a release and tag at the exact tested commit. Leave version empty to build without publishing. Existing tags/releases are rejected for manual runs. The existing tag-triggered workflow remains supported.
