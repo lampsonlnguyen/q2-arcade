@@ -119,3 +119,7 @@ Once the build and package checks pass, Actions creates the release and attaches
 
 Arcade reads **System Settings → Controls → Wheel Sensitivity** (`[Q2POD] WHEELSENSITIVITY`) when opened. Menu and grid navigation use the firmware's tick threshold; paddle movement and Blocks rotation scale with the same percentage. Reopen Arcade after changing the setting. Missing or invalid values use Q2 Pod's default 50%.
 
+
+## Q2 Pod 1.9.6 artwork
+
+The installation ZIP includes a matching purple arcade cabinet icon at 128, 52 and 40 pixels, and a 96-pixel white-on-transparent Home Shortcut pane. Q2 Pod automatically uses `icon.png` (52 px), `icon-40.png` (40 px) and, in 1.9.6 or later, `pane.png` for a card app selected as Home's Shortcut. The 128-pixel `icon-128.png` is supplemental artwork, not a firmware row-icon filename. The pane is tinted by the active firmware theme. The images are generated during `make` by `tools/icons.py` using Python 3 without external libraries; run `python3 tools/icons.py --output dist/.arcade` to regenerate them. CI checks the actual packaged images. Older firmware can ignore the pane without affecting the game executable.

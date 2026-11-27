@@ -26,6 +26,7 @@ jobs:
       - name: Verify install package
         run: |
           unzip -t dist/q2-arcade.zip
+          python3 tests/check_art.py dist/q2-arcade.zip
           unzip -p dist/q2-arcade.zip .arcade/q2app | grep -Fx 'game=1'
           test -s dist/.arcade/LICENSE.txt
           file dist/.arcade/q2-arcade | grep -E 'ELF 32-bit LSB.*MIPS'

@@ -9,6 +9,9 @@ Q2_FLAGS = --target=mipsel-linux-gnu -march=mips32r2 -mabi=32 -mfp64 -mnan=2008 
 SOURCES = src/app.c src/render.c src/theme.c core/arcade_core.c core/breakout_core.c core/mini_games.c core/game_framework.c core/original_games.c
 OBJECTS = $(addprefix build/q2/,$(SOURCES:.c=.o) src/platform_q2.o)
 CARD = dist/.arcade
+PYTHON ?= python3
+ART = icon-128.png icon.png icon-40.png pane.png
+ART_FILES = $(addprefix $(CARD)/,$(ART))
 
 all: dist/q2-arcade.zip
 
@@ -28,7 +31,11 @@ $(CARD)/LICENSE.txt: LICENSE
 	mkdir -p $(@D)
 	cp $< $@
 
-dist/q2-arcade.zip: $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.txt
+# Grouped target: generate the complete set once, including under parallel make.
+$(ART_FILES) &: tools/icons.py
+	$(PYTHON) tools/icons.py --output $(CARD)
+
+dist/q2-arcade.zip: $(CARD)/q2-arcade $(CARD)/q2app $(CARD)/LICENSE.txt $(ART_FILES)
 	cd dist && rm -f q2-arcade.zip && zip -q q2-arcade.zip $(patsubst dist/%,%,$^)
 
 build/app-test: tests/app_test.c src/app.c src/theme.c $(wildcard core/*.c) src/app.h src/theme.h
